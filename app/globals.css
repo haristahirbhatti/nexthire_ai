@@ -1,0 +1,56 @@
+@import "@fontsource/fraunces/400.css";
+@import "@fontsource/fraunces/500.css";
+@import "@fontsource/fraunces/600.css";
+@import "@fontsource/fraunces/600-italic.css";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-fraunces: "Fraunces", Georgia, serif;
+  --font-plex: "IBM Plex Sans", system-ui, sans-serif;
+  --font-plex-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #FAF9F4;
+  color: #101F2B;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+::selection {
+  background-color: #CFE4D5;
+  color: #164630;
+}
+
+*:focus-visible {
+  outline: 2px solid #2C7A50;
+  outline-offset: 2px;
+}
+
+.paper-grain {
+  background-image: radial-gradient(circle at 1px 1px, rgba(16,31,43,0.05) 1px, transparent 0);
+  background-size: 22px 22px;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
