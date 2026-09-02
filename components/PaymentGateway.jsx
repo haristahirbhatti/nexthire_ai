@@ -11,7 +11,7 @@ const METHODS = [
 
 export default function PaymentGateway({ amount = "24.00", description, onPaid }) {
   const [method, setMethod] = useState("visa");
-  const [status, setStatus] = useState("idle"); // idle | processing | paid
+  const [status, setStatus] = useState("idle");
   const invoiceId = useState(() => `NH-${Math.floor(100000 + Math.random() * 899999)}`)[0];
 
   const pay = () => {
@@ -19,16 +19,16 @@ export default function PaymentGateway({ amount = "24.00", description, onPaid }
     setTimeout(() => {
       setStatus("paid");
       onPaid?.({ invoiceId, method, amount });
-    }, 1400);
+    }, 1200);
   };
 
   if (status === "paid") {
     return (
-      <div className="rounded-2xl border border-ready-100 bg-ready-50 p-6 text-center sm:p-8">
-        <ShieldCheck className="mx-auto h-8 w-8 text-ready-600" />
-        <p className="mt-3 font-display text-xl font-semibold text-ink">Payment confirmed</p>
-        <p className="mt-1 text-sm text-ink-soft">
-          Invoice <span className="font-mono text-ink">{invoiceId}</span> — ${amount} via{" "}
+      <div className="rounded-2xl border border-gold-500/40 bg-canvas-card p-6 text-center sm:p-8">
+        <ShieldCheck className="mx-auto h-8 w-8 text-gold-500" />
+        <p className="mt-3 font-display text-xl font-semibold text-text-primary">Payment confirmed</p>
+        <p className="mt-1 text-sm text-text-secondary">
+          Invoice <span className="font-mono text-gold-400">{invoiceId}</span> — ${amount} via{" "}
           {METHODS.find((m) => m.id === method)?.label}
         </p>
       </div>
@@ -36,13 +36,13 @@ export default function PaymentGateway({ amount = "24.00", description, onPaid }
   }
 
   return (
-    <div className="rounded-2xl border border-line bg-white p-6 shadow-panel sm:p-8">
+    <div className="card-dark rounded-2xl p-6 sm:p-8">
       <div className="flex items-center justify-between">
         <div>
-          <p className="font-display text-xl font-semibold text-ink">Secure checkout</p>
-          <p className="text-sm text-ink-soft">{description}</p>
+          <p className="font-display text-xl font-semibold text-text-primary">Secure checkout</p>
+          <p className="text-sm text-text-secondary">{description}</p>
         </div>
-        <p className="font-mono text-2xl text-ink">${amount}</p>
+        <p className="font-mono text-2xl font-semibold text-gold-400">${amount}</p>
       </div>
 
       <div className="mt-6 grid grid-cols-3 gap-2">
@@ -53,8 +53,8 @@ export default function PaymentGateway({ amount = "24.00", description, onPaid }
             onClick={() => setMethod(id)}
             className={`flex flex-col items-center gap-1.5 rounded-xl border px-3 py-3 text-xs font-medium transition ${
               method === id
-                ? "border-ready-500 bg-ready-50 text-ready-700"
-                : "border-line text-ink-soft hover:border-ink-soft"
+                ? "border-gold-500 bg-gold-500/10 text-gold-400"
+                : "border-canvas-border text-text-secondary hover:border-canvas-muted"
             }`}
           >
             <Icon className="h-4 w-4" />
@@ -67,7 +67,7 @@ export default function PaymentGateway({ amount = "24.00", description, onPaid }
         type="button"
         onClick={pay}
         disabled={status === "processing"}
-        className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-medium text-paper transition hover:bg-ready-600 disabled:opacity-70"
+        className="btn-gold mt-6 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-canvas disabled:opacity-70"
       >
         {status === "processing" ? (
           <>
@@ -77,7 +77,7 @@ export default function PaymentGateway({ amount = "24.00", description, onPaid }
           `Pay $${amount} securely`
         )}
       </button>
-      <p className="mt-3 text-center text-xs text-ink-soft">
+      <p className="mt-3 text-center text-xs text-text-muted">
         An electronic invoice is issued automatically after verification.
       </p>
     </div>

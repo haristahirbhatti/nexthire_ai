@@ -1,21 +1,13 @@
-@import "@fontsource/fraunces/400.css";
-@import "@fontsource/fraunces/500.css";
-@import "@fontsource/fraunces/600.css";
-@import "@fontsource/fraunces/600-italic.css";
-@import "@fontsource/ibm-plex-sans/400.css";
-@import "@fontsource/ibm-plex-sans/500.css";
-@import "@fontsource/ibm-plex-sans/600.css";
-@import "@fontsource/ibm-plex-mono/400.css";
-@import "@fontsource/ibm-plex-mono/500.css";
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --font-fraunces: "Fraunces", Georgia, serif;
-  --font-plex: "IBM Plex Sans", system-ui, sans-serif;
-  --font-plex-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-display: "Crimson Pro", Georgia, serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
 }
 
 html {
@@ -23,10 +15,42 @@ html {
 }
 
 body {
-  background-color: #FAF9F4;
-  color: #101F2B;
+  background-color: #0F0F0F;
+  color: #F5F5F5;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* Selection */
+::selection {
+  background-color: rgba(184, 146, 42, 0.3);
+  color: #F5F5F5;
+}
+
+/* Focus */
+*:focus-visible {
+  outline: 2px solid #B8922A;
+  outline-offset: 2px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #161616;
+}
+::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B8922A;
+}
+
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
@@ -36,21 +60,103 @@ body {
   }
 }
 
-::selection {
-  background-color: #CFE4D5;
-  color: #164630;
-}
-
-*:focus-visible {
-  outline: 2px solid #2C7A50;
-  outline-offset: 2px;
-}
-
-.paper-grain {
-  background-image: radial-gradient(circle at 1px 1px, rgba(16,31,43,0.05) 1px, transparent 0);
-  background-size: 22px 22px;
-}
-
+/* Utilities */
 .text-balance {
   text-wrap: balance;
+}
+
+/* Gold gradient button */
+.btn-gold {
+  background: linear-gradient(135deg, #C9A227 0%, #B8922A 50%, #956F1A 100%);
+  color: #0F0F0F;
+  font-weight: 600;
+  transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-gold:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(184, 146, 42, 0.35);
+}
+.btn-gold:active {
+  transform: translateY(0);
+}
+
+/* Card dark */
+.card-dark {
+  background: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  box-shadow: 0 0 0 0 rgba(184,146,42,0);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card-dark:hover {
+  border-color: rgba(184, 146, 42, 0.25);
+  box-shadow: 0 0 0 1px rgba(184,146,42,0.12), 0 8px 32px rgba(0,0,0,0.5);
+  transform: translateY(-2px);
+}
+
+/* Input dark */
+.input-dark {
+  background: #161616;
+  border: 1px solid #2A2A2A;
+  color: #F5F5F5;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.input-dark:focus {
+  outline: none;
+  border-color: #B8922A;
+  box-shadow: 0 0 0 3px rgba(184, 146, 42, 0.15);
+}
+.input-dark::placeholder {
+  color: #555555;
+}
+
+/* Dashed upload border */
+.upload-zone {
+  border: 1.5px dashed #333333;
+  background: #161616;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.upload-zone:hover,
+.upload-zone.drag-over {
+  border-color: #B8922A;
+  background: #1A1500;
+}
+
+/* Step rail dot */
+.step-dot-active {
+  background: #B8922A;
+  box-shadow: 0 0 12px rgba(184, 146, 42, 0.5);
+}
+
+/* Gold text glow */
+.gold-text {
+  color: #B8922A;
+}
+
+/* Subtle grid pattern overlay */
+.grid-overlay {
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Pulse dot */
+.pulse-dot::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: rgba(46, 160, 67, 0.3);
+  animation: ping 1.5s ease-in-out infinite;
+}
+
+/* Animate fade in */
+.animate-fadeIn {
+  animation: fade-in 0.35s ease-out forwards;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

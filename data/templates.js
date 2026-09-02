@@ -8,10 +8,11 @@ const FAMILIES = [
 
 const TONES = ["Classic", "Modern", "Minimal", "Executive", "Creative", "Technical"];
 
-const ACCENTS = ["#2C7A50", "#164630", "#C98A22", "#101F2B", "#A83C3C", "#3C4F5C"];
+const ACCENTS = ["#B8922A", "#3E8F63", "#D4A72C", "#C24B4B", "#6E4E10", "#2C7A50"];
 
 export function getTemplatePage(page, pageSize = 24) {
-  const start = page * pageSize;
+  const pageNum = Math.max(1, page);
+  const start = (pageNum - 1) * pageSize;
   const items = [];
   for (let i = 0; i < pageSize && start + i < TEMPLATE_COUNT; i++) {
     const idx = start + i;
@@ -22,6 +23,7 @@ export function getTemplatePage(page, pageSize = 24) {
       name: `${family} ${tone}`,
       tone,
       accent: ACCENTS[idx % ACCENTS.length],
+      previewBg: "#1A1A1A",
       columns: idx % 3 === 0 ? 2 : 1,
     });
   }

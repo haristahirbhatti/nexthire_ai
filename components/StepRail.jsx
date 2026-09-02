@@ -1,42 +1,31 @@
+"use client";
+
 export default function StepRail({ steps, current }) {
   return (
-    <ol className="mx-auto flex max-w-3xl items-center px-1">
+    <div className="mx-auto flex max-w-xl items-center justify-center gap-2 font-mono text-xs">
       {steps.map((step, i) => {
-        const state =
-          i < current ? "done" : i === current ? "active" : "upcoming";
+        const isPast = i < current;
+        const isActive = i === current;
+
         return (
-          <li key={step} className="flex flex-1 items-center last:flex-none">
-            <div className="flex flex-col items-center gap-1.5">
-              <div
-                className={`flex h-7 w-7 items-center justify-center rounded-full font-mono text-[11px] transition ${
-                  state === "done"
-                    ? "bg-ready-500 text-white"
-                    : state === "active"
-                    ? "border-2 border-ready-500 text-ready-600"
-                    : "border border-line text-ink-soft"
-                }`}
-              >
-                {state === "done" ? "✓" : i + 1}
-              </div>
-              <span
-                className={`hidden text-center text-[11px] leading-tight sm:block ${
-                  state === "upcoming" ? "text-ink-soft" : "text-ink"
-                }`}
-                style={{ maxWidth: "80px" }}
-              >
-                {step}
-              </span>
-            </div>
+          <div key={step} className="flex items-center gap-2">
+            <span
+              className={`rounded-full px-3 py-1 transition-all ${
+                isActive
+                  ? "bg-gold-500 font-semibold text-canvas"
+                  : isPast
+                  ? "bg-canvas-card text-text-primary border border-gold-500/40"
+                  : "text-text-muted"
+              }`}
+            >
+              {step}
+            </span>
             {i < steps.length - 1 && (
-              <div
-                className={`mx-2 h-px flex-1 ${
-                  state === "done" ? "bg-ready-500" : "bg-line"
-                }`}
-              />
+              <span className="h-px w-6 bg-canvas-border" />
             )}
-          </li>
+          </div>
         );
       })}
-    </ol>
+    </div>
   );
 }
