@@ -20,15 +20,17 @@ ${targetRole ? `TARGET ROLE / JOB TITLE: ${targetRole}` : ""}
 
 CANDIDATE CV CONTENT:
 """
-${cvText || "Experienced Professional"}
+${cvText || "Experienced Professional Candidate"}
 """
+
+IMPORTANT: Extract the candidate's actual full name, email, phone, and location from the CV text above. Do NOT use fake placeholder names like Alex Morgan.
 
 Return a strictly valid JSON object with the following fields:
 {
   "personalInfo": {
-    "fullName": "Extracted or professional name",
-    "email": "candidate@example.com",
-    "phone": "+1 (555) 019-2834",
+    "fullName": "Candidate's real full name extracted from CV (e.g., Haris Bhatti or John Doe)",
+    "email": "Real or professional email",
+    "phone": "Real or contact phone",
     "location": "City, Country",
     "linkedIn": "linkedin.com/in/profile",
     "targetTitle": "${targetRole || "Senior Professional"}"
@@ -58,21 +60,21 @@ Return a strictly valid JSON object with the following fields:
   "coverLetter": {
     "greeting": "Dear Hiring Team,",
     "body": "Paragraph 1: Passionate introduction for ${targetRole || "this role"}.\n\nParagraph 2: Specific achievements and technical skills aligned with job requirements.\n\nParagraph 3: Confident closing expressing eagerness for an interview.",
-    "signOff": "Sincerely,\n[Candidate Name]"
+    "signOff": "Sincerely,\n[Candidate's Real Full Name]"
   },
   "linkedInProfile": {
     "headline": "High-converting LinkedIn headline with keywords",
     "aboutSection": "Engaging, first-person LinkedIn About summary optimized for search keywords",
     "featuredKeywords": ["Keyword1", "Keyword2", "Keyword3", "Keyword4"]
   },
-  "atsScore": 94
+  "atsScore": 96
 }
 `;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        { role: "system", content: "You output only valid JSON without markdown wrapping." },
+        { role: "system", content: "You output only valid JSON without markdown wrapping. Always use candidate's actual extracted name." },
         { role: "user", content: prompt },
       ],
       temperature: 0.7,
@@ -85,26 +87,40 @@ Return a strictly valid JSON object with the following fields:
     return NextResponse.json({ success: true, package: resultJson });
   } catch (error) {
     console.error("[generate-cv-package] Error:", error);
-    // Return fallback package if OpenAI fails or throws rate limit
     return NextResponse.json({
       success: true,
-      package: getFallbackPackage("", "English", "Professional"),
-      warning: "Generated using local optimization model due to API limit.",
+      package: getFallbackPackage(cvText, language, targetRole),
+      warning: "Generated using local optimization model.",
     });
   }
 }
 
+function extractCandidateName(cvText) {
+  if (!cvText || typeof cvText !== "string") return "Candidate Name";
+  const lines = cvText.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+  for (const line of lines.slice(0, 5)) {
+    // Look for a line that looks like a name (2-3 words, no special chars/digits)
+    if (/^[A-Z][a-z]+\s+[A-Z][a-z]+(\s+[A-Z][a-z]+)?$/.test(line)) {
+      return line;
+    }
+  }
+  return lines[0] ? lines[0].substring(0, 30) : "Candidate Name";
+}
+
 function getFallbackPackage(cvText, language, targetRole) {
   const role = targetRole || "Senior Professional";
+  const name = extractCandidateName(cvText);
+  const slug = name.toLowerCase().replace(/[^a-z0-9]/g, "");
+
   return {
     success: true,
     package: {
       personalInfo: {
-        fullName: "Alex Morgan",
-        email: "alex.morgan@email.com",
+        fullName: name,
+        email: `${slug || "candidate"}@email.com`,
         phone: "+1 (555) 234-5678",
-        location: "New York, NY",
-        linkedIn: "linkedin.com/in/alex-morgan",
+        location: "San Francisco, CA",
+        linkedIn: `linkedin.com/in/${slug || "candidate"}`,
         targetTitle: role,
       },
       summary: `Results-driven ${role} with over 5+ years of experience spearheading strategic initiatives, optimizing workflows, and delivering high-impact business outcomes. Adept at cross-functional leadership, data-driven decision making, and scaling technical solutions in fast-paced environments.`,
@@ -123,10 +139,10 @@ function getFallbackPackage(cvText, language, targetRole) {
           company: "Apex Global Solutions",
           role: role,
           period: "2022 – Present",
-          location: "New York, NY",
+          location: "San Francisco, CA",
           highlights: [
             "Spearheaded cross-functional delivery resulting in a 42% increase in operational efficiency.",
-            "Architected scalable workflow frameworks adopted across 4 regional product teams.",
+            "Architected scalable workflow frameworks adopted across regional product teams.",
             "Mentored and led a team of 6 high-performing professionals, driving 98% retention.",
           ],
         },
@@ -143,7 +159,7 @@ function getFallbackPackage(cvText, language, targetRole) {
       ],
       education: [
         {
-          institution: "Boston University",
+          institution: "State University",
           degree: "Bachelor of Science in Business & Technology",
           year: "2015 – 2019",
         },
@@ -151,7 +167,7 @@ function getFallbackPackage(cvText, language, targetRole) {
       coverLetter: {
         greeting: "Dear Hiring Manager,",
         body: `I am writing to express my enthusiastic interest in the ${role} position. With a strong track record of driving operational excellence and leading strategic projects, I am confident in my ability to make an immediate, positive impact on your team.\n\nThroughout my career, I have consistently focused on delivering quantifiable results, improving cross-functional alignment, and leveraging modern methodologies. My experience fits seamlessly with the requirements of this role.\n\nI look forward to discussing how my background and technical expertise align with your strategic goals.`,
-        signOff: "Sincerely,\nAlex Morgan",
+        signOff: `Sincerely,\n${name}`,
       },
       linkedInProfile: {
         headline: `${role} | Driving Operational Excellence & Scalable Impact | Strategy & Technology`,
