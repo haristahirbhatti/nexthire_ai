@@ -463,7 +463,9 @@ function ReviewStep({ cvPackage, onAgree }) {
             <div>
               <p className="text-base font-bold text-text-primary">{pkg.personalInfo?.fullName || "Candidate Name"}</p>
               <p className="text-gold-400 font-semibold">{pkg.personalInfo?.targetTitle || "Senior Professional"}</p>
-              <p className="text-text-muted">{pkg.personalInfo?.location} · {pkg.personalInfo?.email}</p>
+              <p className="text-text-muted">
+                {[pkg.personalInfo?.location, pkg.personalInfo?.email, pkg.personalInfo?.phone].filter(Boolean).join(" · ")}
+              </p>
             </div>
             <div>
               <p className="font-bold uppercase text-text-primary border-b border-canvas-border pb-1 mb-2">Executive Summary</p>

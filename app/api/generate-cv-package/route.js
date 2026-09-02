@@ -20,11 +20,11 @@ You are a World-Class Executive CV Writer and ATS Specialist.
 Your task is to re-structure and polish the candidate's ACTUAL CV into an ATS-optimized career package in ${language}.
 
 CRITICAL DIRECTIVES:
-1. DO NOT invent fake company names (do NOT write "Company Name" or "Apex Global"), fake university names (do NOT write "University Name" or "State University"), or fake candidate names.
+1. DO NOT invent fake company names, fake university names, or fake candidate names.
 2. EXTRACT the candidate's REAL full name, REAL email, REAL phone, REAL CITY AND COUNTRY LOCATION, REAL work history (company names, job titles, dates), and REAL education directly from the candidate's CV text provided below.
-3. For "location", find the candidate's actual City and Country (or State) from the header/contact section (e.g. "Lahore, Pakistan", "New York, USA", "London, UK"). DO NOT write generic placeholder text like "City, Country".
-4. Keep all factual details 100% accurate to the original CV text.
-5. Enhance bullet points with strong action verbs and quantified achievements where appropriate.
+3. For "location", find the candidate's actual City and Country (or State) from the header/contact section (e.g. "Lahore, Pakistan", "New York, USA", "London, UK", "Dubai, UAE"). DO NOT write generic placeholder text like "City, Country" or "City, State".
+4. If location is not in the CV, extract whatever city/country is mentioned or leave it empty ("").
+5. Keep all factual details 100% accurate to the original CV text.
 
 ${targetRole ? `TARGET ROLE / JOB TITLE FOCUS: ${targetRole}` : ""}
 
@@ -39,7 +39,7 @@ Return a strictly valid JSON object adhering to this structure:
     "fullName": "<Candidate's Real Full Name extracted from CV>",
     "email": "<Candidate's Real Email extracted from CV>",
     "phone": "<Candidate's Real Phone extracted from CV>",
-    "location": "<Candidate's Real City and Country extracted from CV header (e.g. Lahore, Pakistan or London, UK)>",
+    "location": "<Candidate's Real City and Country extracted from CV header, or empty string if not found>",
     "linkedIn": "<Candidate's LinkedIn URL if present, or linkedin.com/in/candidate>",
     "targetTitle": "${targetRole || "<Candidate's Current or Target Title extracted from CV>"}"
   },
@@ -82,15 +82,22 @@ Return a strictly valid JSON object adhering to this structure:
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        { role: "system", content: "You output only valid JSON. Strictly extract real candidate name, email, phone, city and country location, company names, and university names from the input CV text. Never invent placeholders like City, Country." },
+        { role: "system", content: "You output only valid JSON. Strictly extract real candidate name, email, phone, city and country location, company names, and university names from the input CV text. Never write 'City, Country'." },
         { role: "user", content: prompt },
       ],
-      temperature: 0.3,
+      temperature: 0.2,
       response_format: { type: "json_object" },
     });
 
     const responseText = completion.choices[0].message.content.trim();
     const resultJson = JSON.parse(responseText);
+
+    // Sanitize any residual placeholder strings
+    if (resultJson.personalInfo) {
+      if (resultJson.personalInfo.location?.toLowerCase().includes("city") && resultJson.personalInfo.location?.toLowerCase().includes("country")) {
+        resultJson.personalInfo.location = extractLocation(cvText, cvText.split("\n"));
+      }
+    }
 
     return NextResponse.json({ success: true, package: resultJson });
   } catch (error) {
@@ -130,11 +137,11 @@ function parseCVStructure(cvText, language, targetRole) {
 
   // 2. Extract Email
   const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-  const email = emailMatch ? emailMatch[0] : `${fullName.toLowerCase().replace(/[^a-z]/g, "") || "candidate"}@email.com`;
+  const email = emailMatch ? emailMatch[0] : "";
 
   // 3. Extract Phone
   const phoneMatch = text.match(/(\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{4,6}/);
-  const phone = phoneMatch ? phoneMatch[0] : "+1 (555) 019-2834";
+  const phone = phoneMatch ? phoneMatch[0] : "";
 
   // 4. Extract Real City & Country Location
   let location = extractLocation(text, lines);
@@ -275,29 +282,41 @@ function extractLocation(text, lines) {
   // Regex for "City, Country" or "City, State" (e.g. Lahore, Pakistan or New York, NY)
   const locationRegex = /([A-Z][a-zA-Z\s]{2,20}),\s*([A-Z][a-zA-Z\s]{2,20})/;
 
-  for (const line of lines.slice(0, 10)) {
+  for (const line of lines.slice(0, 12)) {
     const match = line.match(locationRegex);
     if (match) {
       const loc = match[0].trim();
-      if (!loc.toLowerCase().includes("university") && !loc.toLowerCase().includes("school")) {
+      const locLower = loc.toLowerCase();
+      if (
+        !locLower.includes("university") &&
+        !locLower.includes("school") &&
+        !locLower.includes("city") &&
+        !locLower.includes("country") &&
+        !locLower.includes("state")
+      ) {
         return loc;
       }
     }
   }
 
-  // Common countries/cities lookup
-  const commonLocations = [
-    "Lahore, Pakistan", "Karachi, Pakistan", "Islamabad, Pakistan",
-    "London, UK", "New York, USA", "San Francisco, USA", "Dubai, UAE",
-    "Toronto, Canada", "Berlin, Germany", "Sydney, Australia", "Singapore"
+  // Country & major city list scan
+  const countries = [
+    "Pakistan", "United States", "USA", "UK", "United Kingdom", "Canada",
+    "UAE", "Dubai", "Saudi Arabia", "Germany", "France", "Australia", "India",
+    "Singapore", "Qatar", "Kuwait", "Oman", "Turkey", "Malaysia"
   ];
 
-  for (const loc of commonLocations) {
-    const city = loc.split(",")[0];
-    if (text.toLowerCase().includes(city.toLowerCase())) {
-      return loc;
+  for (const line of lines.slice(0, 15)) {
+    for (const c of countries) {
+      if (line.toLowerCase().includes(c.toLowerCase())) {
+        const parts = line.split(/[|•·,]/).map((p) => p.trim());
+        const found = parts.find((p) => p.toLowerCase().includes(c.toLowerCase()));
+        if (found && found.length < 35 && !found.toLowerCase().includes("university")) {
+          return found;
+        }
+      }
     }
   }
 
-  return "Location Unspecified";
+  return ""; // Return clean empty string instead of literal "City, Country"
 }

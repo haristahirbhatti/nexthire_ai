@@ -20,18 +20,16 @@ export async function POST(request) {
 
     if (mimeType === "application/pdf" || fileName.endsWith(".pdf")) {
       try {
-        // Standard pdf-parse import — works on both local & Vercel
         const pdfParse = require("pdf-parse");
         const data = await pdfParse(buffer);
         extractedText = data.text || "";
       } catch (pdfErr) {
         console.warn("[parse-cv] pdf-parse fallback:", pdfErr.message);
-        // Clean raw buffer extraction fallback
-        extractedText = buffer
-          .toString("utf-8")
-          .replace(/[^\x20-\x7E\n\r\t]/g, " ")
-          .replace(/\s{3,}/g, "\n")
-          .trim();
+      }
+
+      // If pdf-parse returned empty or failed, use clean PDF stream text extractor
+      if (!extractedText || extractedText.trim().length < 20) {
+        extractedText = extractPDFTextFromBuffer(buffer);
       }
     } else if (
       fileName.endsWith(".doc") ||
@@ -62,4 +60,36 @@ export async function POST(request) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Pure JS PDF Text Stream Extractor
+ * Parses PDF string streams and text operators ((text) Tj / TJ)
+ */
+function extractPDFTextFromBuffer(buffer) {
+  const str = buffer.toString("latin1");
+  const textParts = [];
+
+  // Match PDF text string operators: (Text Content) Tj or (Text Content) TJ
+  const tjRegex = /\(([^()]{2,120})\)\s*(?:Tj|TJ)/g;
+  let match;
+
+  while ((match = tjRegex.exec(str)) !== null) {
+    const cleaned = match[1]
+      .replace(/\\([()])/g, "$1")
+      .replace(/\\n/g, "\n")
+      .replace(/\\r/g, "")
+      .trim();
+    if (cleaned.length > 1) {
+      textParts.push(cleaned);
+    }
+  }
+
+  if (textParts.length >= 3) {
+    return textParts.join(" ");
+  }
+
+  // Secondary fallback: extract printable text blocks
+  const printable = str.match(/[A-Za-z0-9@.,\s\-\/]{4,100}/g) || [];
+  return printable.filter((s) => s.trim().length > 3).join(" ");
 }
