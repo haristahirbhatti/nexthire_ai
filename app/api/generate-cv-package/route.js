@@ -21,9 +21,10 @@ Your task is to re-structure and polish the candidate's ACTUAL CV into an ATS-op
 
 CRITICAL DIRECTIVES:
 1. DO NOT invent fake company names (do NOT write "Company Name" or "Apex Global"), fake university names (do NOT write "University Name" or "State University"), or fake candidate names.
-2. EXTRACT the candidate's REAL full name, REAL email, REAL phone, REAL work history (company names, job titles, dates), and REAL education directly from the candidate's CV text provided below.
-3. Keep all factual details (where they worked, where they studied, real project details) 100% accurate to the original CV text.
-4. Enhance the bullet points to use strong action verbs and quantified achievements where appropriate.
+2. EXTRACT the candidate's REAL full name, REAL email, REAL phone, REAL CITY AND COUNTRY LOCATION, REAL work history (company names, job titles, dates), and REAL education directly from the candidate's CV text provided below.
+3. For "location", find the candidate's actual City and Country (or State) from the header/contact section (e.g. "Lahore, Pakistan", "New York, USA", "London, UK"). DO NOT write generic placeholder text like "City, Country".
+4. Keep all factual details 100% accurate to the original CV text.
+5. Enhance bullet points with strong action verbs and quantified achievements where appropriate.
 
 ${targetRole ? `TARGET ROLE / JOB TITLE FOCUS: ${targetRole}` : ""}
 
@@ -38,7 +39,7 @@ Return a strictly valid JSON object adhering to this structure:
     "fullName": "<Candidate's Real Full Name extracted from CV>",
     "email": "<Candidate's Real Email extracted from CV>",
     "phone": "<Candidate's Real Phone extracted from CV>",
-    "location": "<Candidate's Real Location extracted from CV or City, Country>",
+    "location": "<Candidate's Real City and Country extracted from CV header (e.g. Lahore, Pakistan or London, UK)>",
     "linkedIn": "<Candidate's LinkedIn URL if present, or linkedin.com/in/candidate>",
     "targetTitle": "${targetRole || "<Candidate's Current or Target Title extracted from CV>"}"
   },
@@ -49,7 +50,7 @@ Return a strictly valid JSON object adhering to this structure:
       "company": "<Real Company Name extracted from CV>",
       "role": "<Real Job Title extracted from CV>",
       "period": "<Real Date/Years from CV>",
-      "location": "<Location from CV or City>",
+      "location": "<Candidate's City/Location extracted from CV>",
       "highlights": [
         "<High-impact bullet point based on candidate's real work at this company>",
         "<High-impact bullet point based on candidate's real work at this company>",
@@ -81,10 +82,10 @@ Return a strictly valid JSON object adhering to this structure:
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        { role: "system", content: "You output only valid JSON. Strictly extract real candidate names, company names, and university names from the input CV text. Never invent placeholders." },
+        { role: "system", content: "You output only valid JSON. Strictly extract real candidate name, email, phone, city and country location, company names, and university names from the input CV text. Never invent placeholders like City, Country." },
         { role: "user", content: prompt },
       ],
-      temperature: 0.3, // Lower temperature to strictly prevent hallucinations
+      temperature: 0.3,
       response_format: { type: "json_object" },
     });
 
@@ -103,8 +104,8 @@ Return a strictly valid JSON object adhering to this structure:
 }
 
 /**
- * Smart Local Parser: Extracts actual candidate name, email, phone, companies, skills, and education
- * from raw CV text without inventing fake companies or fake university names.
+ * Smart Local Parser: Extracts actual candidate name, email, phone, city/country location,
+ * companies, skills, and education from raw CV text.
  */
 function parseCVStructure(cvText, language, targetRole) {
   const text = (cvText || "").trim();
@@ -135,7 +136,10 @@ function parseCVStructure(cvText, language, targetRole) {
   const phoneMatch = text.match(/(\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{4,6}/);
   const phone = phoneMatch ? phoneMatch[0] : "+1 (555) 019-2834";
 
-  // 4. Extract Real Skills
+  // 4. Extract Real City & Country Location
+  let location = extractLocation(text, lines);
+
+  // 5. Extract Real Skills
   const knownSkills = [
     "JavaScript", "TypeScript", "React", "Next.js", "Node.js", "Python", "Java", "C++",
     "SQL", "PostgreSQL", "MongoDB", "AWS", "Docker", "Git", "Agile", "Scrum",
@@ -146,7 +150,7 @@ function parseCVStructure(cvText, language, targetRole) {
   const extractedSkills = knownSkills.filter((s) => text.toLowerCase().includes(s.toLowerCase()));
   const skills = extractedSkills.length > 0 ? extractedSkills : ["Strategic Planning", "Project Management", "Team Leadership", "Data Analysis", "Communication", "Problem Solving"];
 
-  // 5. Extract Work Experience (find real company lines)
+  // 6. Extract Work Experience
   const experience = [];
   const expIndex = lines.findIndex((l) => /experience|work history|employment/i.test(l));
   const eduIndex = lines.findIndex((l) => /education|academic|qualification/i.test(l));
@@ -158,7 +162,6 @@ function parseCVStructure(cvText, language, targetRole) {
     expLines = lines.slice(5, 25);
   }
 
-  // Group experience by non-bullet headers
   let currentCompany = "";
   let currentRole = targetRole || "Professional Role";
   let currentHighlights = [];
@@ -172,7 +175,7 @@ function parseCVStructure(cvText, language, targetRole) {
           company: currentCompany,
           role: currentRole,
           period: "Recent",
-          location: "City",
+          location: location,
           highlights: currentHighlights.slice(0, 4),
         });
         currentHighlights = [];
@@ -190,7 +193,7 @@ function parseCVStructure(cvText, language, targetRole) {
       company: currentCompany || "Professional Experience",
       role: currentRole,
       period: "Recent",
-      location: "City",
+      location: location,
       highlights: currentHighlights.length > 0 ? currentHighlights.slice(0, 4) : [
         "Spearheaded key projects delivering measurable operational improvements.",
         "Collaborated with cross-functional teams to execute strategic goals.",
@@ -204,7 +207,7 @@ function parseCVStructure(cvText, language, targetRole) {
       company: "Professional Career History",
       role: targetRole || "Senior Professional",
       period: "2020 – Present",
-      location: "City",
+      location: location,
       highlights: [
         "Spearheaded key projects delivering measurable operational improvements.",
         "Collaborated with cross-functional teams to execute strategic goals.",
@@ -213,7 +216,7 @@ function parseCVStructure(cvText, language, targetRole) {
     });
   }
 
-  // 6. Extract Education
+  // 7. Extract Education
   const education = [];
   if (eduIndex !== -1) {
     const eduLines = lines.slice(eduIndex + 1, eduIndex + 8);
@@ -243,7 +246,7 @@ function parseCVStructure(cvText, language, targetRole) {
       fullName,
       email,
       phone,
-      location: "City, Country",
+      location,
       linkedIn: `linkedin.com/in/${fullName.toLowerCase().replace(/[^a-z]/g, "") || "candidate"}`,
       targetTitle: roleTitle,
     },
@@ -263,4 +266,38 @@ function parseCVStructure(cvText, language, targetRole) {
     },
     atsScore: 95,
   };
+}
+
+/**
+ * Helper: Extracts City and Country / State from candidate CV text
+ */
+function extractLocation(text, lines) {
+  // Regex for "City, Country" or "City, State" (e.g. Lahore, Pakistan or New York, NY)
+  const locationRegex = /([A-Z][a-zA-Z\s]{2,20}),\s*([A-Z][a-zA-Z\s]{2,20})/;
+
+  for (const line of lines.slice(0, 10)) {
+    const match = line.match(locationRegex);
+    if (match) {
+      const loc = match[0].trim();
+      if (!loc.toLowerCase().includes("university") && !loc.toLowerCase().includes("school")) {
+        return loc;
+      }
+    }
+  }
+
+  // Common countries/cities lookup
+  const commonLocations = [
+    "Lahore, Pakistan", "Karachi, Pakistan", "Islamabad, Pakistan",
+    "London, UK", "New York, USA", "San Francisco, USA", "Dubai, UAE",
+    "Toronto, Canada", "Berlin, Germany", "Sydney, Australia", "Singapore"
+  ];
+
+  for (const loc of commonLocations) {
+    const city = loc.split(",")[0];
+    if (text.toLowerCase().includes(city.toLowerCase())) {
+      return loc;
+    }
+  }
+
+  return "Location Unspecified";
 }
