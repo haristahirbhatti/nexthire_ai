@@ -92,6 +92,16 @@ export default function InterviewPage() {
     setStepIndex(2); // proceed to interview room setup
   };
 
+  // Detect Stripe Checkout success redirect (?payment=success)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("payment") === "success" || params.get("status") === "success") {
+        handlePaid();
+      }
+    }
+  }, []);
+
   const startInterview = () => {
     setQIndex(0);
     setAnswers({});

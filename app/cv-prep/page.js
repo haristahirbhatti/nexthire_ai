@@ -86,8 +86,18 @@ export default function CvPrepPage() {
 
   const handlePaid = () => {
     registerPayment();
-    next();
+    setStep(6); // Move directly to Download step
   };
+
+  // Detect Stripe Checkout success redirect (?payment=success)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("payment") === "success" || params.get("status") === "success") {
+        handlePaid();
+      }
+    }
+  }, []);
 
   const startOver = () => {
     setStep(0);
