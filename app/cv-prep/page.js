@@ -164,7 +164,7 @@ export default function CvPrepPage() {
             </div>
           )}
           {step === 6 && (
-            <DownloadStep cvPackage={cvPackage} onStartOver={startOver} />
+            <DownloadStep cvPackage={cvPackage} templateId={templateId} onStartOver={startOver} />
           )}
         </div>
       </div>
@@ -599,7 +599,7 @@ function ReviewStep({ cvPackage, onAgree }) {
   );
 }
 
-function DownloadStep({ cvPackage, onStartOver }) {
+function DownloadStep({ cvPackage, templateId, onStartOver }) {
   const [copied, setCopied] = useState(false);
   const pkg = cvPackage || {};
 
@@ -636,7 +636,7 @@ ${pkg.coverLetter?.signOff || ""}
         {/* Option 1: Word Document */}
         <button
           type="button"
-          onClick={() => downloadWordDocument(pkg)}
+          onClick={() => downloadWordDocument(pkg, templateId)}
           className="btn-gold flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold shadow-gold"
         >
           <FileDown className="h-4 w-4" />
@@ -646,7 +646,7 @@ ${pkg.coverLetter?.signOff || ""}
         {/* Option 2: PDF Document */}
         <button
           type="button"
-          onClick={() => downloadPDFDocument(pkg)}
+          onClick={() => downloadPDFDocument(pkg, templateId)}
           className="flex items-center justify-center gap-2 rounded-xl border border-gold-500/50 bg-gold-500/10 py-3.5 text-sm font-semibold text-gold-400 hover:bg-gold-500/20 transition"
         >
           <FileDown className="h-4 w-4" />
