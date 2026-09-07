@@ -15,16 +15,30 @@ export async function POST(req) {
       });
     }
 
-    const prompt = `
-You are a World-Class Executive CV Writer and ATS Specialist.
-Your task is to re-structure and polish the candidate's ACTUAL CV into an ATS-optimized career package in ${language}.
+    const isEnglish = language === "English";
+    const translationDirective = isEnglish
+      ? ""
+      : `
+LANGUAGE TRANSLATION DIRECTIVE (MANDATORY):
+- The target output language is: ${language}
+- TRANSLATE ALL text content into ${language} — including the summary, all bullet points, cover letter body, LinkedIn profile text, and section headings.
+- The CV may have been written in English or another language. Regardless of the input language, ALL written content MUST be fully translated into ${language}.
+- Proper nouns such as: candidate full name, company names, university names, city/country, email, phone, LinkedIn URL, and skill tags should remain unchanged (do NOT translate names).
+- Dates, years, and numeric values stay as-is.
+- The greeting and sign-off in the cover letter should also be in ${language}.
+`;
 
+    const prompt = `
+You are a World-Class Executive CV Writer, ATS Specialist, and Professional Translator.
+Your task is to re-structure, polish, and fully rewrite the candidate's CV into an ATS-optimized career package.
+${translationDirective}
 CRITICAL DIRECTIVES:
 1. DO NOT invent fake company names, fake university names, or fake candidate names.
 2. EXTRACT the candidate's REAL full name, REAL email, REAL phone, REAL CITY AND COUNTRY LOCATION, REAL work history (company names, job titles, dates), and REAL education directly from the candidate's CV text provided below.
 3. For "location", find the candidate's actual City and Country (or State) from the header/contact section (e.g. "Lahore, Pakistan", "New York, USA", "London, UK", "Dubai, UAE"). DO NOT write generic placeholder text like "City, Country" or "City, State".
 4. If location is not in the CV, extract whatever city/country is mentioned or leave it empty ("").
 5. Keep all factual details 100% accurate to the original CV text.
+6. ${isEnglish ? "Write all text content in English." : `Write ALL text content (summary, bullets, cover letter, LinkedIn about) fully in ${language}. Names, companies, institutions stay as-is.`}
 
 ${targetRole ? `TARGET ROLE / JOB TITLE FOCUS: ${targetRole}` : ""}
 
@@ -43,46 +57,50 @@ Return a strictly valid JSON object adhering to this structure:
     "linkedIn": "<Candidate's LinkedIn URL if present, or linkedin.com/in/candidate>",
     "targetTitle": "${targetRole || "<Candidate's Current or Target Title extracted from CV>"}"
   },
-  "summary": "<3-4 sentence professional executive summary based directly on candidate's real experience>",
+  "summary": "<3-4 sentence professional executive summary written in ${language} based directly on candidate's real experience>",
   "skills": ["<Real Skill 1 from CV>", "<Real Skill 2 from CV>", "<Real Skill 3 from CV>", "<Real Skill 4 from CV>", "<Real Skill 5 from CV>", "<Real Skill 6 from CV>"],
   "experience": [
     {
-      "company": "<Real Company Name extracted from CV>",
-      "role": "<Real Job Title extracted from CV>",
+      "company": "<Real Company Name — do NOT translate>",
+      "role": "<Real Job Title — ${isEnglish ? "in English" : `translated into ${language}`}>",
       "period": "<Real Date/Years from CV>",
       "location": "<Candidate's City/Location extracted from CV>",
       "highlights": [
-        "<High-impact bullet point based on candidate's real work at this company>",
-        "<High-impact bullet point based on candidate's real work at this company>",
-        "<High-impact bullet point based on candidate's real work at this company>"
+        "<High-impact bullet point in ${language} based on candidate's real work at this company>",
+        "<High-impact bullet point in ${language} based on candidate's real work at this company>",
+        "<High-impact bullet point in ${language} based on candidate's real work at this company>"
       ]
     }
   ],
   "education": [
     {
-      "institution": "<Real School/University Name extracted from CV>",
-      "degree": "<Real Degree/Diploma extracted from CV>",
+      "institution": "<Real School/University Name — do NOT translate>",
+      "degree": "<Real Degree/Diploma — ${isEnglish ? "in English" : `translated into ${language}`}>",
       "year": "<Real Graduation Year from CV>"
     }
   ],
   "coverLetter": {
-    "greeting": "Dear Hiring Manager,",
-    "body": "<Tailored cover letter in ${language} referencing candidate's real experience for ${targetRole || "this position"}>",
-    "signOff": "Sincerely,\n<Candidate's Real Full Name>"
+    "greeting": "<Appropriate greeting in ${language}, e.g. Dear Hiring Manager in ${language}>",
+    "body": "<Tailored cover letter fully written in ${language} referencing candidate's real experience for ${targetRole || "this position"}>",
+    "signOff": "<Appropriate sign-off in ${language}>\n<Candidate's Real Full Name>"
   },
   "linkedInProfile": {
-    "headline": "<Optimized LinkedIn headline with candidate's real title and top skills>",
-    "aboutSection": "<Engaging LinkedIn About section based on candidate's real background>",
+    "headline": "<Optimized LinkedIn headline in ${language} with candidate's real title and top skills>",
+    "aboutSection": "<Engaging LinkedIn About section fully written in ${language} based on candidate's real background>",
     "featuredKeywords": ["<Keyword1>", "<Keyword2>", "<Keyword3>", "<Keyword4>"]
   },
   "atsScore": 96
 }
 `;
 
+    const systemMessage = isEnglish
+      ? "You output only valid JSON. Strictly extract real candidate name, email, phone, city and country location, company names, and university names from the input CV text. Never write 'City, Country'."
+      : `You output only valid JSON. Extract real candidate details and FULLY TRANSLATE all written text content into ${language}. Keep proper nouns (names, companies, universities, cities) unchanged. Never write 'City, Country'.`;
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        { role: "system", content: "You output only valid JSON. Strictly extract real candidate name, email, phone, city and country location, company names, and university names from the input CV text. Never write 'City, Country'." },
+        { role: "system", content: systemMessage },
         { role: "user", content: prompt },
       ],
       temperature: 0.2,

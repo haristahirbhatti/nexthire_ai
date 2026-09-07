@@ -214,8 +214,9 @@ function UploadStep({ cvFile, onFile, targetRole, setTargetRole, onNext }) {
 
 function TemplateStep({ templateId, setTemplateId, onNext }) {
   const [page, setPage] = useState(1);
-  const items = getTemplatePage(page, 12);
-  const totalPages = Math.ceil(TEMPLATE_COUNT / 12);
+  const PAGE_SIZE = 9;
+  const items = getTemplatePage(page, PAGE_SIZE);
+  const totalPages = Math.ceil(TEMPLATE_COUNT / PAGE_SIZE);
 
   return (
     <div className="card-dark rounded-2xl p-6 sm:p-9 animate-fadeIn space-y-6">
@@ -227,64 +228,111 @@ function TemplateStep({ templateId, setTemplateId, onNext }) {
         <p className="mt-2 text-sm text-text-secondary">
           Select from {TEMPLATE_COUNT.toLocaleString("en-US")} professional layouts designed to pass ATS parsers.
         </p>
+        {templateId && (
+          <p className="mt-2 text-xs font-mono text-gold-400">
+            ✓ Selected: <span className="font-semibold">{items.find(i => i.id === templateId)?.name || `Template #${templateId}`}</span>
+          </p>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
         {items.map((t) => {
           const selected = templateId === t.id;
+          const isTwo = t.columns === 2;
           return (
             <button
               key={t.id}
               type="button"
               onClick={() => setTemplateId(t.id)}
-              className={`group flex flex-col overflow-hidden rounded-xl border p-3.5 text-left transition ${
+              className={`group flex flex-col gap-2 rounded-xl border p-2.5 text-left transition-all duration-200 ${
                 selected
-                  ? "border-gold-500 bg-gold-500/10 text-gold-400 shadow-gold"
-                  : "border-canvas-border bg-canvas-mid hover:border-canvas-muted hover:bg-canvas-card"
+                  ? "border-gold-500 bg-gold-500/10 shadow-[0_0_18px_rgba(184,146,42,0.25)]"
+                  : "border-canvas-border bg-canvas-mid hover:border-gold-500/40 hover:bg-canvas-card"
               }`}
             >
+              {/* Template Preview Card */}
               <div
-                className="aspect-[3/4] w-full rounded-lg border border-canvas-border p-3 text-[8px] font-mono leading-tight overflow-hidden transition group-hover:border-gold-500/40 relative"
-                style={{ backgroundColor: t.previewBg }}
+                className="relative w-full overflow-hidden rounded-lg"
+                style={{
+                  aspectRatio: "3/4",
+                  backgroundColor: t.previewBg,
+                  border: selected ? `2px solid ${t.accent}` : "1px solid rgba(255,255,255,0.08)",
+                }}
               >
-                <div
-                  className="h-1.5 w-full rounded mb-2"
-                  style={{ backgroundColor: t.accent }}
-                />
-                <div className="font-bold text-text-primary text-[10px] mb-0.5">{t.name}</div>
-                <div className="text-[7px] text-text-muted mb-2">{t.tone} Layout</div>
+                {/* Header accent bar */}
+                <div className="p-2.5 pb-1">
+                  <div className="mb-1 h-2 w-full rounded-sm" style={{ backgroundColor: t.accent }} />
+                  <div className="mb-0.5 h-1.5 w-3/4 rounded-sm bg-white/40" />
+                  <div className="h-1 w-1/2 rounded-sm bg-white/20" />
+                </div>
 
-                {t.columns === 2 ? (
-                  <div className="grid grid-cols-3 gap-1">
-                    <div className="col-span-1 space-y-1">
-                      <div className="h-1 w-full bg-text-primary/20 rounded" />
-                      <div className="h-1 w-4/5 bg-text-primary/10 rounded" />
-                      <div className="h-1 w-3/4 bg-text-primary/10 rounded" />
+                {/* Body layout preview */}
+                {isTwo ? (
+                  <div className="flex gap-1.5 px-2 pb-2">
+                    <div className="w-1/3 space-y-1">
+                      <div className="h-px w-full" style={{ backgroundColor: t.accent, opacity: 0.6 }} />
+                      <div className="h-1 w-full rounded-sm bg-white/15" />
+                      <div className="h-1 w-4/5 rounded-sm bg-white/10" />
+                      <div className="h-1 w-3/4 rounded-sm bg-white/10" />
+                      <div className="h-px w-full mt-1" style={{ backgroundColor: t.accent, opacity: 0.4 }} />
+                      <div className="h-1 w-full rounded-sm bg-white/15" />
+                      <div className="h-1 w-3/4 rounded-sm bg-white/10" />
                     </div>
-                    <div className="col-span-2 space-y-1">
-                      <div className="h-1 w-full bg-text-primary/30 rounded" />
-                      <div className="h-1 w-5/6 bg-text-primary/20 rounded" />
-                      <div className="h-1 w-4/5 bg-text-primary/20 rounded" />
+                    <div className="flex-1 space-y-1">
+                      <div className="h-px w-full" style={{ backgroundColor: t.accent, opacity: 0.6 }} />
+                      <div className="h-1 w-full rounded-sm bg-white/30" />
+                      <div className="h-1 w-5/6 rounded-sm bg-white/20" />
+                      <div className="h-1 w-4/5 rounded-sm bg-white/20" />
+                      <div className="h-px w-full mt-1" style={{ backgroundColor: t.accent, opacity: 0.4 }} />
+                      <div className="h-1 w-3/4 rounded-sm bg-white/25" />
+                      <div className="h-1 w-full rounded-sm bg-white/15" />
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-1 text-text-secondary">
-                    <div className="h-1 w-full bg-text-primary/30 rounded" />
-                    <div className="h-1 w-4/5 bg-text-primary/20 rounded" />
-                    <div className="h-1 w-5/6 bg-text-primary/20 rounded" />
-                    <div className="h-1 w-2/3 bg-text-primary/10 rounded" />
+                  <div className="space-y-1 px-2 pb-2">
+                    <div className="h-px w-full" style={{ backgroundColor: t.accent, opacity: 0.6 }} />
+                    <div className="h-1 w-full rounded-sm bg-white/30" />
+                    <div className="h-1 w-4/5 rounded-sm bg-white/20" />
+                    <div className="h-1 w-5/6 rounded-sm bg-white/20" />
+                    <div className="h-px w-full mt-1" style={{ backgroundColor: t.accent, opacity: 0.4 }} />
+                    <div className="h-1 w-3/4 rounded-sm bg-white/25" />
+                    <div className="h-1 w-full rounded-sm bg-white/15" />
+                    <div className="h-1 w-5/6 rounded-sm bg-white/15" />
+                    <div className="h-1 w-2/3 rounded-sm bg-white/10" />
                   </div>
                 )}
 
+                {/* Selected checkmark badge */}
                 {selected && (
-                  <div className="absolute top-2 right-2 rounded-full bg-gold-500 p-1 text-canvas">
-                    <Check className="h-3 w-3" />
+                  <div
+                    className="absolute right-2 top-2 rounded-full p-1 shadow-lg"
+                    style={{ backgroundColor: t.accent }}
+                  >
+                    <Check className="h-3 w-3 text-black" />
                   </div>
                 )}
+
+                {/* Layout type label */}
+                <div
+                  className="absolute bottom-0 left-0 right-0 px-2 py-1 text-[8px] font-mono tracking-wide"
+                  style={{ backgroundColor: "rgba(0,0,0,0.6)", color: t.accent }}
+                >
+                  {t.tone.toUpperCase()} · {isTwo ? "2-COL" : "1-COL"}
+                </div>
               </div>
-              <div className="mt-2.5 flex items-center justify-between">
-                <span className="text-xs font-semibold text-text-primary">{t.name}</span>
-                <span className="rounded bg-canvas-card px-1.5 py-0.5 text-[9px] font-mono text-text-muted">
+
+              {/* Name + tone tag */}
+              <div className="flex items-center justify-between px-0.5">
+                <span className={`text-xs font-semibold leading-tight ${selected ? "text-gold-400" : "text-text-primary"}`}>
+                  {t.name}
+                </span>
+                <span
+                  className="rounded px-1.5 py-0.5 text-[9px] font-mono"
+                  style={{
+                    backgroundColor: selected ? t.accent + "33" : "rgba(255,255,255,0.05)",
+                    color: selected ? t.accent : "#888",
+                  }}
+                >
                   {t.tone}
                 </span>
               </div>
@@ -302,7 +350,7 @@ function TemplateStep({ templateId, setTemplateId, onNext }) {
             type="button"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="rounded-lg border border-canvas-border bg-canvas-mid px-3 py-1.5 text-xs text-text-secondary disabled:opacity-40"
+            className="rounded-lg border border-canvas-border bg-canvas-mid px-3 py-1.5 text-xs text-text-secondary disabled:opacity-40 hover:border-gold-500/40"
           >
             Previous
           </button>
@@ -310,7 +358,7 @@ function TemplateStep({ templateId, setTemplateId, onNext }) {
             type="button"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
-            className="rounded-lg border border-canvas-border bg-canvas-mid px-3 py-1.5 text-xs text-text-secondary disabled:opacity-40"
+            className="rounded-lg border border-canvas-border bg-canvas-mid px-3 py-1.5 text-xs text-text-secondary disabled:opacity-40 hover:border-gold-500/40"
           >
             Next
           </button>
