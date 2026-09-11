@@ -18,7 +18,7 @@ import StepRail from "@/components/StepRail";
 import UploadBox from "@/components/UploadBox";
 import PaymentGateway from "@/components/PaymentGateway";
 import { LANGUAGES } from "@/data/languages";
-import { TEMPLATE_COUNT, getTemplatePage } from "@/data/templates";
+import { TEMPLATE_COUNT, getTemplatePage, getPreviewHTML, getTemplateById } from "@/data/templates";
 import { parseCVFile } from "@/lib/parsePDF";
 import { useAppState } from "@/lib/store";
 import { downloadWordDocument, downloadPDFDocument } from "@/lib/exportDocument";
@@ -157,7 +157,7 @@ export default function CvPrepPage() {
           {step === 5 && (
             <div className="mx-auto max-w-md">
               <PaymentGateway
-                amount="19.00"
+                amount="9.99"
                 description="Professional CV Preparation & Career Services"
                 onPaid={handlePaid}
               />
@@ -213,10 +213,9 @@ function UploadStep({ cvFile, onFile, targetRole, setTargetRole, onNext }) {
 }
 
 function TemplateStep({ templateId, setTemplateId, onNext }) {
-  const [page, setPage] = useState(1);
   const PAGE_SIZE = 9;
-  const items = getTemplatePage(page, PAGE_SIZE);
-  const totalPages = Math.ceil(TEMPLATE_COUNT / PAGE_SIZE);
+  const items = getTemplatePage(1, PAGE_SIZE);
+  const selectedTemplate = getTemplateById(templateId);
 
   return (
     <div className="card-dark rounded-2xl p-6 sm:p-9 animate-fadeIn space-y-6">
@@ -226,11 +225,12 @@ function TemplateStep({ templateId, setTemplateId, onNext }) {
           Choose a design template
         </h2>
         <p className="mt-2 text-sm text-text-secondary">
-          Select from {TEMPLATE_COUNT.toLocaleString("en-US")} professional layouts designed to pass ATS parsers.
+          {TEMPLATE_COUNT} professional layouts — each previewed with real dummy CV content.
         </p>
         {templateId && (
           <p className="mt-2 text-xs font-mono text-gold-400">
-            ✓ Selected: <span className="font-semibold">{items.find(i => i.id === templateId)?.name || `Template #${templateId}`}</span>
+            ✓ Selected: <span className="font-semibold">{selectedTemplate?.name}</span>
+            <span className="ml-2 opacity-60">{selectedTemplate?.columns === 2 ? "· 2-Column" : "· 1-Column"}</span>
           </p>
         )}
       </div>
@@ -238,96 +238,70 @@ function TemplateStep({ templateId, setTemplateId, onNext }) {
       <div className="grid grid-cols-3 gap-3 sm:gap-4">
         {items.map((t) => {
           const selected = templateId === t.id;
-          const isTwo = t.columns === 2;
           return (
             <button
               key={t.id}
               type="button"
               onClick={() => setTemplateId(t.id)}
-              className={`group flex flex-col gap-2 rounded-xl border p-2.5 text-left transition-all duration-200 ${
+              className={`group flex flex-col gap-2 rounded-xl border p-2 text-left transition-all duration-200 ${
                 selected
                   ? "border-gold-500 bg-gold-500/10 shadow-[0_0_18px_rgba(184,146,42,0.25)]"
                   : "border-canvas-border bg-canvas-mid hover:border-gold-500/40 hover:bg-canvas-card"
               }`}
             >
-              {/* Template Preview Card */}
+              {/* Real mini-resume preview */}
               <div
-                className="relative w-full overflow-hidden rounded-lg"
+                className="relative w-full overflow-hidden rounded-lg shadow-md"
                 style={{
                   aspectRatio: "3/4",
-                  backgroundColor: t.previewBg,
-                  border: selected ? `2px solid ${t.accent}` : "1px solid rgba(255,255,255,0.08)",
+                  border: selected ? `2px solid ${t.accent}` : "1px solid rgba(255,255,255,0.10)",
+                  background: "#fff",
                 }}
               >
-                {/* Header accent bar */}
-                <div className="p-2.5 pb-1">
-                  <div className="mb-1 h-2 w-full rounded-sm" style={{ backgroundColor: t.accent }} />
-                  <div className="mb-0.5 h-1.5 w-3/4 rounded-sm bg-white/40" />
-                  <div className="h-1 w-1/2 rounded-sm bg-white/20" />
-                </div>
-
-                {/* Body layout preview */}
-                {isTwo ? (
-                  <div className="flex gap-1.5 px-2 pb-2">
-                    <div className="w-1/3 space-y-1">
-                      <div className="h-px w-full" style={{ backgroundColor: t.accent, opacity: 0.6 }} />
-                      <div className="h-1 w-full rounded-sm bg-white/15" />
-                      <div className="h-1 w-4/5 rounded-sm bg-white/10" />
-                      <div className="h-1 w-3/4 rounded-sm bg-white/10" />
-                      <div className="h-px w-full mt-1" style={{ backgroundColor: t.accent, opacity: 0.4 }} />
-                      <div className="h-1 w-full rounded-sm bg-white/15" />
-                      <div className="h-1 w-3/4 rounded-sm bg-white/10" />
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <div className="h-px w-full" style={{ backgroundColor: t.accent, opacity: 0.6 }} />
-                      <div className="h-1 w-full rounded-sm bg-white/30" />
-                      <div className="h-1 w-5/6 rounded-sm bg-white/20" />
-                      <div className="h-1 w-4/5 rounded-sm bg-white/20" />
-                      <div className="h-px w-full mt-1" style={{ backgroundColor: t.accent, opacity: 0.4 }} />
-                      <div className="h-1 w-3/4 rounded-sm bg-white/25" />
-                      <div className="h-1 w-full rounded-sm bg-white/15" />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-1 px-2 pb-2">
-                    <div className="h-px w-full" style={{ backgroundColor: t.accent, opacity: 0.6 }} />
-                    <div className="h-1 w-full rounded-sm bg-white/30" />
-                    <div className="h-1 w-4/5 rounded-sm bg-white/20" />
-                    <div className="h-1 w-5/6 rounded-sm bg-white/20" />
-                    <div className="h-px w-full mt-1" style={{ backgroundColor: t.accent, opacity: 0.4 }} />
-                    <div className="h-1 w-3/4 rounded-sm bg-white/25" />
-                    <div className="h-1 w-full rounded-sm bg-white/15" />
-                    <div className="h-1 w-5/6 rounded-sm bg-white/15" />
-                    <div className="h-1 w-2/3 rounded-sm bg-white/10" />
-                  </div>
-                )}
+                {/* Scale the preview HTML down to fit the card */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "280px",
+                    height: "373px",
+                    transformOrigin: "top left",
+                    transform: "scale(0.385)",
+                    pointerEvents: "none",
+                    userSelect: "none",
+                  }}
+                  dangerouslySetInnerHTML={{ __html: getPreviewHTML(t) }}
+                />
 
                 {/* Selected checkmark badge */}
                 {selected && (
                   <div
-                    className="absolute right-2 top-2 rounded-full p-1 shadow-lg"
+                    className="absolute right-2 top-2 rounded-full p-1 shadow-lg z-10"
                     style={{ backgroundColor: t.accent }}
                   >
                     <Check className="h-3 w-3 text-black" />
                   </div>
                 )}
 
-                {/* Layout type label */}
+                {/* Layout type label overlay */}
                 <div
-                  className="absolute bottom-0 left-0 right-0 px-2 py-1 text-[8px] font-mono tracking-wide"
-                  style={{ backgroundColor: "rgba(0,0,0,0.6)", color: t.accent }}
+                  className="absolute bottom-0 left-0 right-0 px-2 py-1 text-[7.5px] font-mono tracking-wide z-10"
+                  style={{ backgroundColor: "rgba(0,0,0,0.55)", color: t.accent }}
                 >
-                  {t.tone.toUpperCase()} · {isTwo ? "2-COL" : "1-COL"}
+                  {t.tone.toUpperCase()} · {t.columns === 2 ? "2-COL" : "1-COL"}
                 </div>
               </div>
 
-              {/* Name + tone tag */}
+              {/* Name + tone */}
               <div className="flex items-center justify-between px-0.5">
-                <span className={`text-xs font-semibold leading-tight ${selected ? "text-gold-400" : "text-text-primary"}`}>
+                <span className={`text-[11px] font-semibold leading-tight truncate ${
+                  selected ? "text-gold-400" : "text-text-primary"
+                }`}>
                   {t.name}
                 </span>
                 <span
-                  className="rounded px-1.5 py-0.5 text-[9px] font-mono"
+                  className="rounded px-1.5 py-0.5 text-[9px] font-mono flex-shrink-0 ml-1"
                   style={{
                     backgroundColor: selected ? t.accent + "33" : "rgba(255,255,255,0.05)",
                     color: selected ? t.accent : "#888",
@@ -339,30 +313,6 @@ function TemplateStep({ templateId, setTemplateId, onNext }) {
             </button>
           );
         })}
-      </div>
-
-      <div className="flex items-center justify-between border-t border-canvas-border pt-4">
-        <span className="font-mono text-xs text-text-muted">
-          Page {page} of {totalPages}
-        </span>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="rounded-lg border border-canvas-border bg-canvas-mid px-3 py-1.5 text-xs text-text-secondary disabled:opacity-40 hover:border-gold-500/40"
-          >
-            Previous
-          </button>
-          <button
-            type="button"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="rounded-lg border border-canvas-border bg-canvas-mid px-3 py-1.5 text-xs text-text-secondary disabled:opacity-40 hover:border-gold-500/40"
-          >
-            Next
-          </button>
-        </div>
       </div>
 
       <button
@@ -592,7 +542,7 @@ function ReviewStep({ cvPackage, onAgree }) {
         onClick={onAgree}
         className="btn-gold flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold"
       >
-        Proceed to checkout ($19.00)
+        Proceed to checkout ($9.99)
         <ArrowRight className="h-4 w-4" />
       </button>
     </div>
