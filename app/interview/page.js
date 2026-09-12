@@ -18,6 +18,7 @@ import UploadBox from "@/components/UploadBox";
 import PaymentGateway from "@/components/PaymentGateway";
 import { LANGUAGES } from "@/data/languages";
 import { parseCVFile, generateInterviewQuestions } from "@/lib/parsePDF";
+import { buildQuestionSet } from "@/data/interviewQuestions";
 import { useAppState } from "@/lib/store";
 import CameraView from "@/components/CameraView";
 import { speak, stopSpeaking } from "@/lib/speechUtils";
@@ -46,6 +47,40 @@ export default function InterviewPage() {
   const [draft, setDraft] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(SESSION_SECONDS);
   const timerRef = useRef(null);
+
+  // Load saved session on mount (handles page reloads / post-payment redirects)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const savedJob = sessionStorage.getItem("nexthire_jobTitle");
+      if (savedJob) setJobTitle(savedJob);
+
+      const savedQs = sessionStorage.getItem("nexthire_questions");
+      if (savedQs) {
+        const parsed = JSON.parse(savedQs);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setQuestions(parsed);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not read sessionStorage:", e);
+    }
+  }, []);
+
+  // Save questions and job title to sessionStorage
+  const saveInterviewSession = (qs, title) => {
+    if (typeof window === "undefined") return;
+    try {
+      if (qs && qs.length > 0) {
+        sessionStorage.setItem("nexthire_questions", JSON.stringify(qs));
+      }
+      if (title) {
+        sessionStorage.setItem("nexthire_jobTitle", title);
+      }
+    } catch (e) {
+      console.warn("Could not save to sessionStorage:", e);
+    }
+  };
 
   // Parse CV
   const handleCvFile = async (file) => {
@@ -77,8 +112,15 @@ export default function InterviewPage() {
     setGenerating(true);
     setGenerateError("");
     try {
-      const qs = await generateInterviewQuestions(cvText, jobTitle, language);
+      let qs;
+      try {
+        qs = await generateInterviewQuestions(cvText, jobTitle, language);
+      } catch (err) {
+        console.warn("API question generation failed, falling back to mock questions:", err);
+        qs = buildQuestionSet(jobTitle);
+      }
       setQuestions(qs);
+      saveInterviewSession(qs, jobTitle);
       setStepIndex(1); // proceed to payment (Step 2 on rail)
     } catch (err) {
       setGenerateError(err.message || "Failed to generate questions. Please try again.");
@@ -103,6 +145,21 @@ export default function InterviewPage() {
   }, []);
 
   const startInterview = () => {
+    let activeQuestions = questions;
+    if (!activeQuestions || activeQuestions.length === 0) {
+      // Restore from sessionStorage or default mock questions
+      try {
+        const saved = sessionStorage.getItem("nexthire_questions");
+        if (saved) activeQuestions = JSON.parse(saved);
+      } catch (e) {}
+
+      if (!activeQuestions || activeQuestions.length === 0) {
+        activeQuestions = buildQuestionSet(jobTitle || "Professional");
+      }
+      setQuestions(activeQuestions);
+      saveInterviewSession(activeQuestions, jobTitle || "Professional");
+    }
+
     setQIndex(0);
     setAnswers({});
     setSecondsLeft(SESSION_SECONDS);
@@ -434,12 +491,17 @@ function ReadyStep({ avatar, setAvatar, onStart }) {
 }
 
 function LiveStep({ avatar, question, index, total, draft, setDraft, onSubmit, timeLabel }) {
-  if (!question) return null;
+  const currentQuestion = question || {
+    id: "fallback-q",
+    question: "Walk me through your background and key achievements relevant to this role.",
+    ideal: "Provide a clear summary of your experience and measurable impact.",
+  };
+
   return (
     <div className="card-dark rounded-2xl p-6 sm:p-8 animate-fadeIn">
       <div className="flex items-center justify-between">
         <span className="rounded-full border border-canvas-border bg-canvas-mid px-3 py-1 font-mono text-xs text-text-secondary">
-          Question {index + 1} / {total}
+          Question {index + 1} / {total || 15}
         </span>
         <span className="rounded-full bg-gold-500 px-3 py-1 font-mono text-xs font-semibold text-canvas">
           {timeLabel} remaining
@@ -454,7 +516,7 @@ function LiveStep({ avatar, question, index, total, draft, setDraft, onSubmit, t
             <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-canvas bg-emerald-400" />
           </span>
           <p className="max-w-md font-display text-lg italic text-text-primary leading-relaxed sm:text-xl">
-            &ldquo;{question.question}&rdquo;
+            &ldquo;{currentQuestion.question}&rdquo;
           </p>
           <span className="font-mono text-[10px] uppercase tracking-wide text-text-muted">
             AI Interviewer &middot; {avatar}

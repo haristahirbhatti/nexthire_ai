@@ -14,7 +14,7 @@ export default function CameraView({ width = "100%", height = "auto", className 
     mountedRef.current = true;
 
     async function startCamera() {
-      if (!mountedRef.current || document.hidden) return;
+      if (!mountedRef.current) return;
       setLoading(true);
       setError("");
 
@@ -28,7 +28,7 @@ export default function CameraView({ width = "100%", height = "auto", className 
           audio: false,
         });
 
-        if (!mountedRef.current || document.hidden) {
+        if (!mountedRef.current) {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
@@ -36,9 +36,12 @@ export default function CameraView({ width = "100%", height = "auto", className 
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          videoRef.current.play().catch((e) => {
+            console.warn("Camera play warning:", e);
+          });
         }
       } catch (err) {
-        if (!mountedRef.current || document.hidden) return;
+        if (!mountedRef.current) return;
         if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
           setError("Camera access denied. Allow camera permissions in your browser to continue.");
         } else {
@@ -82,9 +85,32 @@ export default function CameraView({ width = "100%", height = "auto", className 
       <div className={`flex flex-col items-center justify-center rounded-2xl border border-canvas-border bg-canvas-card p-6 text-center ${className}`}>
         <VideoOff className="h-10 w-10 text-rose-400 mb-3" />
         <p className="text-sm font-medium text-text-primary">{error}</p>
-        <p className="mt-1 text-xs text-text-secondary max-w-xs">
+        <p className="mt-1 text-xs text-text-secondary max-w-xs mb-3">
           An active webcam is required for the mock interview simulation.
         </p>
+        <button
+          type="button"
+          onClick={() => {
+            setError("");
+            setLoading(true);
+            navigator?.mediaDevices?.getUserMedia({ video: true, audio: false })
+              .then((stream) => {
+                streamRef.current = stream;
+                if (videoRef.current) {
+                  videoRef.current.srcObject = stream;
+                  videoRef.current.play().catch(() => {});
+                }
+                setLoading(false);
+              })
+              .catch((err) => {
+                setError(err.message || "Could not start camera.");
+                setLoading(false);
+              });
+          }}
+          className="rounded-lg border border-gold-500/40 bg-gold-500/10 px-3 py-1.5 text-xs font-medium text-gold-400 hover:bg-gold-500/20"
+        >
+          Try again
+        </button>
       </div>
     );
   }
