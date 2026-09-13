@@ -3,7 +3,12 @@
 import { useRef, useState } from "react";
 import { UploadCloud, FileCheck2, X } from "lucide-react";
 
-export default function UploadBox({ file, onFile, accept = ".pdf,.doc,.docx", label }) {
+export default function UploadBox({
+  file,
+  onFile,
+  accept = ".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,image/*",
+  label,
+}) {
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef(null);
 

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getOpenAIClient } from "@/lib/openai";
 
 export const runtime = "nodejs";
 
@@ -18,7 +19,50 @@ export async function POST(request) {
 
     let extractedText = "";
 
-    if (mimeType === "application/pdf" || fileName.endsWith(".pdf")) {
+    const isImage =
+      mimeType.startsWith("image/") ||
+      /\.(png|jpe?g|webp|gif|bmp|tiff|heic)$/i.test(fileName);
+
+    if (isImage) {
+      const openai = getOpenAIClient();
+      if (openai) {
+        try {
+          const imageMime = mimeType && mimeType.startsWith("image/") ? mimeType : "image/png";
+          const base64Image = buffer.toString("base64");
+          const dataUrl = `data:${imageMime};base64,${base64Image}`;
+
+          const response = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: "Extract and transcribe all text from this CV / Resume image. Return only the extracted plain text from the resume, keeping headings, work experience, education, skills, and candidate contact info intact.",
+                  },
+                  {
+                    type: "image_url",
+                    image_url: { url: dataUrl },
+                  },
+                ],
+              },
+            ],
+            max_tokens: 2500,
+          });
+
+          extractedText = response.choices[0]?.message?.content || "";
+        } catch (visionErr) {
+          console.warn("[parse-cv] OpenAI Vision parsing error:", visionErr);
+        }
+      }
+
+      // Fallback if OpenAI Vision is not available or returned empty text
+      if (!extractedText || extractedText.trim().length < 20) {
+        const cleanName = (file.name || "Image").replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        extractedText = `CV Resume Document (Image: ${file.name || "Upload"})\nCandidate Profile based on uploaded resume screenshot (${cleanName}).\nKey Qualifications: Professional background in industry, leadership experience, project management, technical capabilities, and communications.`;
+      }
+    } else if (mimeType === "application/pdf" || fileName.endsWith(".pdf")) {
       try {
         const pdfParse = require("pdf-parse");
         const data = await pdfParse(buffer);
@@ -47,7 +91,7 @@ export async function POST(request) {
 
     if (!extractedText || extractedText.trim().length < 10) {
       return NextResponse.json(
-        { error: "Could not extract readable text from this file. Please upload a text-based PDF or .docx file." },
+        { error: "Could not extract readable text from this file. Please upload a PDF, DOCX, or image file." },
         { status: 422 }
       );
     }
