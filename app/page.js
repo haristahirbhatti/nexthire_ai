@@ -77,7 +77,7 @@ export default function HomePage() {
           </p>
 
           <ul className="mt-6 space-y-2">
-            {["10,000+ modern templates", "Keyword optimisation for ATS", "Word & PDF downloads"].map((f) => (
+            {["18 professional templates", "Keyword optimisation for ATS", "Word & PDF downloads"].map((f) => (
               <li key={f} className="flex items-center gap-2 text-sm text-text-secondary">
                 <span className="h-1 w-1 rounded-full bg-gold-500 flex-shrink-0" />
                 {f}

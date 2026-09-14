@@ -89,13 +89,36 @@ export default function CvPrepPage() {
     setStep(6); // Move directly to Download step
   };
 
-  // Detect Stripe Checkout success redirect (?payment=success)
+  // Detect Stripe Checkout success redirect (?payment=success&session_id=...)
+  // Verifies payment server-side before granting access
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      if (params.get("payment") === "success" || params.get("status") === "success") {
-        handlePaid();
+      const paymentStatus = params.get("payment") || params.get("status");
+      const sessionId = params.get("session_id");
+
+      if (paymentStatus === "success" && sessionId) {
+        // Verify payment server-side
+        fetch("/api/verify-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.verified) {
+              handlePaid();
+              // Clean URL
+              window.history.replaceState({}, "", window.location.pathname);
+            } else {
+              console.error("Payment verification failed:", data.error);
+            }
+          })
+          .catch((err) => {
+            console.error("Payment verification request failed:", err);
+          });
       }
+      // If ?payment=success but NO session_id → do NOT grant access
     }
   }, []);
 
@@ -213,7 +236,7 @@ function UploadStep({ cvFile, onFile, targetRole, setTargetRole, onNext }) {
 }
 
 function TemplateStep({ templateId, setTemplateId, onNext }) {
-  const PAGE_SIZE = 9;
+  const PAGE_SIZE = 18;
   const items = getTemplatePage(1, PAGE_SIZE);
   const selectedTemplate = getTemplateById(templateId);
 

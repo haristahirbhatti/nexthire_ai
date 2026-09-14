@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Video,
@@ -12,12 +12,16 @@ import {
   Send,
   AlertCircle,
   ArrowRight,
+  CheckCircle2,
+  XCircle,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import StepRail from "@/components/StepRail";
 import UploadBox from "@/components/UploadBox";
 import PaymentGateway from "@/components/PaymentGateway";
 import { LANGUAGES } from "@/data/languages";
-import { parseCVFile, generateInterviewQuestions } from "@/lib/parsePDF";
+import { parseCVFile, generateInterviewQuestions, evaluateAnswer } from "@/lib/parsePDF";
 import { buildQuestionSet } from "@/data/interviewQuestions";
 import { useAppState } from "@/lib/store";
 import CameraView from "@/components/CameraView";
@@ -25,6 +29,45 @@ import { speak, stopSpeaking } from "@/lib/speechUtils";
 
 const STEPS = ["Setup", "Payment", "Interview", "Report"];
 const SESSION_SECONDS = 15 * 60;
+
+/**
+ * Full BCP 47 language tag mapping for all 28 supported languages.
+ * Used by both TTS (speak) and STT (startListening).
+ */
+const LANG_BCP47 = {
+  "English":           "en-US",
+  "French":            "fr-FR",
+  "Spanish":           "es-ES",
+  "Russian":           "ru-RU",
+  "Arabic":            "ar-SA",
+  "Mandarin Chinese":  "zh-CN",
+  "Swedish":           "sv-SE",
+  "German":            "de-DE",
+  "Italian":           "it-IT",
+  "Japanese":          "ja-JP",
+  "Korean":            "ko-KR",
+  "Thai":              "th-TH",
+  "Indonesian":        "id-ID",
+  "Turkish":           "tr-TR",
+  "Hebrew":            "he-IL",
+  "Hindi":             "hi-IN",
+  "Portuguese":        "pt-PT",
+  "Urdu":              "ur-PK",
+  "Danish":            "da-DK",
+  "Norwegian":         "nb-NO",
+  "Ukrainian":         "uk-UA",
+  "Polish":            "pl-PL",
+  "Czech":             "cs-CZ",
+  "Slovak":            "sk-SK",
+  "Serbian":           "sr-RS",
+  "Croatian":          "hr-HR",
+  "Bulgarian":         "bg-BG",
+  "Macedonian":        "mk-MK",
+};
+
+function getLangCode(language) {
+  return LANG_BCP47[language] || "en-US";
+}
 
 export default function InterviewPage() {
   const router = useRouter();
@@ -48,6 +91,10 @@ export default function InterviewPage() {
   const [secondsLeft, setSecondsLeft] = useState(SESSION_SECONDS);
   const timerRef = useRef(null);
 
+  // AI Report state
+  const [evaluations, setEvaluations] = useState({});
+  const [evaluating, setEvaluating] = useState(false);
+
   // Load saved session on mount (handles page reloads / post-payment redirects)
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -62,13 +109,16 @@ export default function InterviewPage() {
           setQuestions(parsed);
         }
       }
+
+      const savedLang = sessionStorage.getItem("nexthire_language");
+      if (savedLang) setLanguage(savedLang);
     } catch (e) {
       console.warn("Could not read sessionStorage:", e);
     }
   }, []);
 
-  // Save questions and job title to sessionStorage
-  const saveInterviewSession = (qs, title) => {
+  // Save questions, job title, and language to sessionStorage
+  const saveInterviewSession = (qs, title, lang) => {
     if (typeof window === "undefined") return;
     try {
       if (qs && qs.length > 0) {
@@ -76,6 +126,9 @@ export default function InterviewPage() {
       }
       if (title) {
         sessionStorage.setItem("nexthire_jobTitle", title);
+      }
+      if (lang) {
+        sessionStorage.setItem("nexthire_language", lang);
       }
     } catch (e) {
       console.warn("Could not save to sessionStorage:", e);
@@ -120,7 +173,7 @@ export default function InterviewPage() {
         qs = buildQuestionSet(jobTitle);
       }
       setQuestions(qs);
-      saveInterviewSession(qs, jobTitle);
+      saveInterviewSession(qs, jobTitle, language);
       setStepIndex(1); // proceed to payment (Step 2 on rail)
     } catch (err) {
       setGenerateError(err.message || "Failed to generate questions. Please try again.");
@@ -134,14 +187,36 @@ export default function InterviewPage() {
     setStepIndex(2); // proceed to interview room setup
   };
 
-  // Detect Stripe Checkout success redirect (?payment=success)
+  // Detect Stripe Checkout success redirect (?payment=success&session_id=...)
+  // Now verifies payment server-side before granting access
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("payment") === "success" || params.get("status") === "success") {
-        handlePaid();
-      }
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const paymentStatus = params.get("payment") || params.get("status");
+    const sessionId = params.get("session_id");
+
+    if (paymentStatus === "success" && sessionId) {
+      // Verify payment server-side
+      fetch("/api/verify-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.verified) {
+            handlePaid();
+            // Clean URL
+            window.history.replaceState({}, "", window.location.pathname);
+          } else {
+            console.error("Payment verification failed:", data.error);
+          }
+        })
+        .catch((err) => {
+          console.error("Payment verification request failed:", err);
+        });
     }
+    // If ?payment=success but NO session_id → do NOT grant access (prevents URL manipulation)
   }, []);
 
   const startInterview = () => {
@@ -157,11 +232,12 @@ export default function InterviewPage() {
         activeQuestions = buildQuestionSet(jobTitle || "Professional");
       }
       setQuestions(activeQuestions);
-      saveInterviewSession(activeQuestions, jobTitle || "Professional");
+      saveInterviewSession(activeQuestions, jobTitle || "Professional", language);
     }
 
     setQIndex(0);
     setAnswers({});
+    setEvaluations({});
     setSecondsLeft(SESSION_SECONDS);
     setStepIndex(2.5); // live sub-state
   };
@@ -182,22 +258,13 @@ export default function InterviewPage() {
     return () => clearInterval(timerRef.current);
   }, [live]);
 
-  // TTS for question
+  // TTS for question — uses full 28-language BCP47 mapping
   useEffect(() => {
     if (live && questions[qIndex]) {
       stopSpeaking();
       speak(questions[qIndex].question, {
         gender: avatar,
-        lang: language === "French" ? "fr-FR" :
-              language === "Spanish" ? "es-ES" :
-              language === "German" ? "de-DE" :
-              language === "Italian" ? "it-IT" :
-              language === "Japanese" ? "ja-JP" :
-              language === "Korean" ? "ko-KR" :
-              language === "Portuguese" ? "pt-PT" :
-              language === "Russian" ? "ru-RU" :
-              language === "Mandarin Chinese" ? "zh-CN" :
-              "en-US"
+        lang: getLangCode(language),
       }).catch((err) => {
         console.error("Speech Synthesis failed:", err);
       });
@@ -208,10 +275,10 @@ export default function InterviewPage() {
     };
   }, [live, qIndex, questions, language, avatar]);
 
-  const finishInterview = () => {
+  const finishInterview = useCallback(() => {
     clearInterval(timerRef.current);
     setStepIndex(3); // Report
-  };
+  }, []);
 
   const submitAnswer = () => {
     const q = questions[qIndex];
@@ -232,6 +299,7 @@ export default function InterviewPage() {
     setJobTitle("");
     setQuestions([]);
     setAnswers({});
+    setEvaluations({});
     setQIndex(0);
     router.push("/");
   };
@@ -300,11 +368,21 @@ export default function InterviewPage() {
               setDraft={setDraft}
               onSubmit={submitAnswer}
               timeLabel={`${minutes}:${seconds}`}
+              language={language}
             />
           )}
 
           {stepIndex === 3 && (
-            <ReportStep questions={questions} answers={answers} onStartOver={startOver} />
+            <ReportStep
+              questions={questions}
+              answers={answers}
+              jobTitle={jobTitle}
+              evaluations={evaluations}
+              setEvaluations={setEvaluations}
+              evaluating={evaluating}
+              setEvaluating={setEvaluating}
+              onStartOver={startOver}
+            />
           )}
         </div>
       </div>
@@ -490,7 +568,7 @@ function ReadyStep({ avatar, setAvatar, onStart }) {
   );
 }
 
-function LiveStep({ avatar, question, index, total, draft, setDraft, onSubmit, timeLabel }) {
+function LiveStep({ avatar, question, index, total, draft, setDraft, onSubmit, timeLabel, language }) {
   const currentQuestion = question || {
     id: "fallback-q",
     question: "Walk me through your background and key achievements relevant to this role.",
@@ -519,7 +597,7 @@ function LiveStep({ avatar, question, index, total, draft, setDraft, onSubmit, t
             &ldquo;{currentQuestion.question}&rdquo;
           </p>
           <span className="font-mono text-[10px] uppercase tracking-wide text-text-muted">
-            AI Interviewer &middot; {avatar}
+            AI Interviewer &middot; {avatar} &middot; {language}
           </span>
         </div>
 
@@ -551,19 +629,97 @@ function LiveStep({ avatar, question, index, total, draft, setDraft, onSubmit, t
   );
 }
 
-function ReportStep({ questions, answers, onStartOver }) {
-  const scored = useMemo(
-    () =>
-      questions.map((q) => {
-        const userAnswer = answers[q.id] || "";
-        const correct = userAnswer.trim().length >= 20;
-        return { ...q, userAnswer, correct };
-      }),
-    [questions, answers]
-  );
+/**
+ * ReportStep — NOW calls /api/evaluate-answer for real AI scoring
+ * instead of the broken length >= 20 check.
+ */
+function ReportStep({ questions, answers, jobTitle, evaluations, setEvaluations, evaluating, setEvaluating, onStartOver }) {
+  // Run AI evaluations when report loads
+  useEffect(() => {
+    if (!questions || questions.length === 0) return;
+    if (Object.keys(evaluations).length > 0) return; // already evaluated
 
-  const correctCount = scored.filter((s) => s.correct).length;
-  const pct = questions.length ? Math.round((correctCount / questions.length) * 100) : 0;
+    const runEvaluations = async () => {
+      setEvaluating(true);
+      const results = {};
+
+      for (const q of questions) {
+        const userAnswer = answers[q.id] || "";
+        try {
+          const evalResult = await evaluateAnswer({
+            question: q.question,
+            idealAnswer: q.ideal,
+            candidateAnswer: userAnswer,
+            jobTitle: jobTitle || "Professional",
+          });
+          results[q.id] = {
+            score: evalResult.score ?? 0,
+            feedback: evalResult.feedback || "No feedback available.",
+            passed: evalResult.passed ?? false,
+          };
+        } catch (err) {
+          // Fallback: if API fails, use a smarter heuristic than length >= 20
+          const words = userAnswer.trim().split(/\s+/).length;
+          const hasSubstance = words >= 15;
+          results[q.id] = {
+            score: hasSubstance ? Math.min(10, Math.round(words / 8)) : userAnswer.trim().length > 0 ? 3 : 0,
+            feedback: !userAnswer.trim()
+              ? "No answer was provided for this question."
+              : hasSubstance
+              ? "Your answer covers some key points. Try to include more specific examples and measurable outcomes."
+              : "Your answer is too brief. Expand with concrete examples using the STAR method (Situation, Task, Action, Result).",
+            passed: hasSubstance,
+          };
+        }
+      }
+
+      setEvaluations(results);
+      setEvaluating(false);
+    };
+
+    runEvaluations();
+  }, [questions, answers, jobTitle]);
+
+  // Compute stats from real evaluations
+  const scored = useMemo(() => {
+    return questions.map((q) => {
+      const userAnswer = answers[q.id] || "";
+      const evalData = evaluations[q.id] || { score: 0, feedback: "Evaluating…", passed: false };
+      return { ...q, userAnswer, ...evalData };
+    });
+  }, [questions, answers, evaluations]);
+
+  const answeredQuestions = scored.filter((s) => s.userAnswer.trim().length > 0);
+  const passedCount = scored.filter((s) => s.passed).length;
+  const totalScore = scored.reduce((sum, s) => sum + (s.score || 0), 0);
+  const avgScore = questions.length ? (totalScore / questions.length).toFixed(1) : "0.0";
+  const passPct = questions.length ? Math.round((passedCount / questions.length) * 100) : 0;
+
+  if (evaluating) {
+    return (
+      <div className="card-dark rounded-2xl p-8 text-center sm:p-12 animate-fadeIn space-y-6">
+        <Loader2 className="mx-auto h-10 w-10 animate-spin text-gold-500" />
+        <h2 className="font-display text-2xl font-semibold text-text-primary sm:text-3xl">
+          AI is analyzing your answers…
+        </h2>
+        <p className="mx-auto max-w-md text-sm text-text-secondary">
+          Each answer is being evaluated by GPT-4o against the ideal response criteria.
+          This takes 15–30 seconds.
+        </p>
+        <div className="mx-auto max-w-xs">
+          <div className="h-1.5 w-full rounded-full bg-canvas-mid overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gold-500 transition-all duration-500"
+              style={{ width: `${Math.round((Object.keys(evaluations).length / Math.max(questions.length, 1)) * 100)}%` }}
+            />
+          </div>
+          <p className="mt-2 font-mono text-xs text-text-muted">
+            {Object.keys(evaluations).length} / {questions.length} evaluated
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="card-dark rounded-2xl p-6 sm:p-9 animate-fadeIn">
@@ -573,25 +729,73 @@ function ReportStep({ questions, answers, onStartOver }) {
       </h2>
 
       <div className="mt-6 flex flex-wrap gap-3">
-        <Stat label="Answered well" value={`${pct}%`} tone="gold" />
-        <Stat label="Needs work" value={`${100 - pct}%`} tone="rose" />
-        <Stat label="Questions" value={questions.length} tone="neutral" />
+        <Stat label="Average Score" value={`${avgScore}/10`} tone="gold" />
+        <Stat label="Passed" value={`${passPct}%`} tone={passPct >= 60 ? "gold" : "rose"} />
+        <Stat label="Answered" value={`${answeredQuestions.length}/${questions.length}`} tone="neutral" />
+        <Stat label="Need Work" value={`${questions.length - passedCount}`} tone="rose" />
+      </div>
+
+      {/* Overall Assessment */}
+      <div className="mt-6 rounded-xl border border-canvas-border bg-canvas-mid p-5">
+        <div className="flex items-center gap-2 mb-3">
+          {passPct >= 70 ? (
+            <TrendingUp className="h-5 w-5 text-emerald-400" />
+          ) : (
+            <TrendingDown className="h-5 w-5 text-rose-400" />
+          )}
+          <span className="font-display text-lg font-semibold text-text-primary">
+            {passPct >= 80 ? "Excellent Performance" :
+             passPct >= 60 ? "Good Performance — Room for Improvement" :
+             passPct >= 40 ? "Needs Significant Improvement" :
+             "Below Expectations — Practice Required"}
+          </span>
+        </div>
+        <p className="text-sm text-text-secondary">
+          {passPct >= 80
+            ? "You demonstrated strong command of the subject matter with specific, detailed answers. Continue refining your responses for maximum impact."
+            : passPct >= 60
+            ? "You showed competence in several areas but some answers lacked depth or specificity. Focus on using the STAR method and including measurable outcomes."
+            : "Many answers were too brief or missed key points. Practice structuring answers with the STAR method (Situation, Task, Action, Result) and prepare specific examples from your experience."}
+        </p>
       </div>
 
       <div className="mt-8 space-y-4">
         {scored.map((s, i) => (
           <div key={s.id} className="rounded-xl border border-canvas-border bg-canvas-mid p-5">
-            <p className="text-sm font-medium text-text-primary">
-              {i + 1}. {s.question}
-            </p>
-            <p className="mt-2 text-sm text-rose-400">
-              <span className="font-mono text-xs text-text-muted">You: </span>
-              {s.userAnswer || "— no answer given —"}
-            </p>
-            <p className="mt-1 text-sm text-emerald-400">
-              <span className="font-mono text-xs text-text-muted">Ideal: </span>
-              {s.ideal}
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm font-medium text-text-primary">
+                {i + 1}. {s.question}
+              </p>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {s.passed ? (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-rose-400" />
+                )}
+                <span className={`font-mono text-xs font-bold ${s.passed ? "text-emerald-400" : "text-rose-400"}`}>
+                  {s.score}/10
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              <div>
+                <span className="font-mono text-xs text-text-muted">Your answer: </span>
+                <p className="mt-0.5 text-sm text-text-secondary">
+                  {s.userAnswer || "— no answer given —"}
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-canvas-raised border border-canvas-border p-3">
+                <span className="font-mono text-xs text-gold-400">AI Feedback: </span>
+                <p className="mt-0.5 text-sm text-text-primary">{s.feedback}</p>
+              </div>
+
+              <div>
+                <span className="font-mono text-xs text-emerald-400/70">Ideal approach: </span>
+                <p className="mt-0.5 text-sm text-emerald-400/80">{s.ideal}</p>
+              </div>
+            </div>
           </div>
         ))}
       </div>

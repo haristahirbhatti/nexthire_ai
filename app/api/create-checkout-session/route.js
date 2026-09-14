@@ -34,8 +34,12 @@ export async function POST(req) {
         },
       ],
       mode: "payment",
-      success_url: returnUrl ? `${returnUrl}?payment=success` : "http://localhost:3000?payment=success",
-      cancel_url: returnUrl ? `${returnUrl}?payment=cancelled` : "http://localhost:3000?payment=cancelled",
+      success_url: returnUrl
+        ? `${returnUrl}?payment=success&session_id={CHECKOUT_SESSION_ID}`
+        : `http://localhost:3000?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: returnUrl
+        ? `${returnUrl}?payment=cancelled`
+        : "http://localhost:3000?payment=cancelled",
     });
 
     return NextResponse.json({ success: true, url: session.url });

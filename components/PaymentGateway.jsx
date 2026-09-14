@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, Wallet, ShieldCheck, Loader2 } from "lucide-react";
+import { CreditCard, Wallet, ShieldCheck, Loader2, AlertCircle } from "lucide-react";
 
 const METHODS = [
   { id: "paypal", label: "PayPal", icon: Wallet },
@@ -13,9 +13,11 @@ export default function PaymentGateway({ amount = "24.00", description, onPaid }
   const [method, setMethod] = useState("visa");
   const [status, setStatus] = useState("idle");
   const [invoiceId, setInvoiceId] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const pay = async () => {
     setStatus("processing");
+    setErrorMsg("");
     try {
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
@@ -23,11 +25,15 @@ export default function PaymentGateway({ amount = "24.00", description, onPaid }
         body: JSON.stringify({
           amount,
           description,
-          returnUrl: typeof window !== "undefined" ? window.location.href : "",
+          returnUrl: typeof window !== "undefined" ? window.location.href.split("?")[0] : "",
         }),
       });
 
       const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Payment service unavailable. Please try again.");
+      }
 
       if (data.url) {
         // Redirect to live Stripe Checkout page
@@ -35,18 +41,19 @@ export default function PaymentGateway({ amount = "24.00", description, onPaid }
         return;
       }
 
-      // If in test simulation mode (or missing secret key)
-      const inv = data.invoiceId || `NH-${Math.floor(100000 + Math.random() * 899999)}`;
-      setInvoiceId(inv);
-      setStatus("paid");
-      onPaid?.({ invoiceId: inv, method, amount });
+      // Stripe key not configured — show error, do NOT grant free access
+      if (data.mock) {
+        setStatus("error");
+        setErrorMsg("Payment system is being configured. Please try again shortly.");
+        return;
+      }
+
+      setStatus("error");
+      setErrorMsg("Could not initiate payment. Please try again.");
     } catch (err) {
       console.error("Payment error:", err);
-      // Fallback completion
-      const inv = `NH-${Math.floor(100000 + Math.random() * 899999)}`;
-      setInvoiceId(inv);
-      setStatus("paid");
-      onPaid?.({ invoiceId: inv, method, amount });
+      setStatus("error");
+      setErrorMsg(err.message || "Payment failed. Please check your connection and try again.");
     }
   };
 
@@ -72,6 +79,13 @@ export default function PaymentGateway({ amount = "24.00", description, onPaid }
         </div>
         <p className="font-mono text-2xl font-semibold text-gold-400">${amount}</p>
       </div>
+
+      {errorMsg && (
+        <div className="mt-4 flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-400">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          {errorMsg}
+        </div>
+      )}
 
       <div className="mt-6 grid grid-cols-3 gap-2">
         {METHODS.map(({ id, label, icon: Icon }) => (
@@ -101,6 +115,8 @@ export default function PaymentGateway({ amount = "24.00", description, onPaid }
           <>
             <Loader2 className="h-4 w-4 animate-spin" /> Connecting to Stripe…
           </>
+        ) : status === "error" ? (
+          "Retry payment"
         ) : (
           `Pay $${amount} securely`
         )}
@@ -111,3 +127,4 @@ export default function PaymentGateway({ amount = "24.00", description, onPaid }
     </div>
   );
 }
+
