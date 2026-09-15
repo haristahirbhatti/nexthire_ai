@@ -258,12 +258,9 @@ create policy "Allow service role full access" on public.prices for all to servi
           </form>
 
           <div className="mt-6 border-t border-canvas-border pt-4 text-center">
-            <p className="font-mono text-[11px] text-text-muted">
-              Default password is <code className="text-gold-400">admin123456</code> (configured via ADMIN_PASSWORD in .env.local).
-            </p>
             <Link
               href="/"
-              className="mt-3 inline-flex items-center gap-1 text-xs text-text-secondary hover:text-text-primary"
+              className="inline-flex items-center gap-1 text-xs text-text-secondary hover:text-text-primary"
             >
               ← Back to NextHire.ai
             </Link>
