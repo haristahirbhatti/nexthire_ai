@@ -77,6 +77,15 @@ export default function InterviewPage() {
   const [language, setLanguage] = useState("English");
   const [avatar, setAvatar] = useState("female");
 
+  const handleLanguageChange = (newLang) => {
+    setLanguage(newLang);
+    try {
+      sessionStorage.setItem("nexthire_language", newLang);
+      sessionStorage.removeItem("nexthire_questions");
+    } catch (_) {}
+    setQuestions([]);
+  };
+
   const [cvFile, setCvFile] = useState(null);
   const [cvText, setCvText] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -169,8 +178,11 @@ export default function InterviewPage() {
       try {
         qs = await generateInterviewQuestions(cvText, jobTitle, language);
       } catch (err) {
-        console.warn("API question generation failed, falling back to mock questions:", err);
-        qs = buildQuestionSet(jobTitle);
+        console.warn("API question generation failed, falling back to localized questions:", err);
+        qs = buildQuestionSet(jobTitle, language);
+      }
+      if (!qs || qs.length === 0) {
+        qs = buildQuestionSet(jobTitle, language);
       }
       setQuestions(qs);
       saveInterviewSession(qs, jobTitle, language);
@@ -222,14 +234,16 @@ export default function InterviewPage() {
   const startInterview = () => {
     let activeQuestions = questions;
     if (!activeQuestions || activeQuestions.length === 0) {
-      // Restore from sessionStorage or default mock questions
       try {
         const saved = sessionStorage.getItem("nexthire_questions");
-        if (saved) activeQuestions = JSON.parse(saved);
+        const savedLang = sessionStorage.getItem("nexthire_language");
+        if (saved && (!savedLang || savedLang === language)) {
+          activeQuestions = JSON.parse(saved);
+        }
       } catch (e) {}
 
       if (!activeQuestions || activeQuestions.length === 0) {
-        activeQuestions = buildQuestionSet(jobTitle || "Professional");
+        activeQuestions = buildQuestionSet(jobTitle || "Professional", language);
       }
       setQuestions(activeQuestions);
       saveInterviewSession(activeQuestions, jobTitle || "Professional", language);
@@ -258,13 +272,14 @@ export default function InterviewPage() {
     return () => clearInterval(timerRef.current);
   }, [live]);
 
-  // TTS for question — uses full 28-language BCP47 mapping
+  // TTS for question — uses full 28-language BCP47 mapping and languageName
   useEffect(() => {
     if (live && questions[qIndex]) {
       stopSpeaking();
       speak(questions[qIndex].question, {
         gender: avatar,
         lang: getLangCode(language),
+        languageName: language,
       }).catch((err) => {
         console.error("Speech Synthesis failed:", err);
       });
@@ -327,7 +342,7 @@ export default function InterviewPage() {
           {stepIndex === 0 && (
             <SetupStep
               language={language}
-              setLanguage={setLanguage}
+              setLanguage={handleLanguageChange}
               cvFile={cvFile}
               onFile={handleCvFile}
               analyzing={analyzing}
@@ -569,10 +584,15 @@ function ReadyStep({ avatar, setAvatar, onStart }) {
 }
 
 function LiveStep({ avatar, question, index, total, draft, setDraft, onSubmit, timeLabel, language }) {
+  const isArabic = language === "Arabic" || (language && language.toLowerCase().includes("arab"));
   const currentQuestion = question || {
     id: "fallback-q",
-    question: "Walk me through your background and key achievements relevant to this role.",
-    ideal: "Provide a clear summary of your experience and measurable impact.",
+    question: isArabic
+      ? "تحدث عن مسيرتك المهنية وسيرتك الذاتية، وأبرز الإنجازات المتعلقة بهذا الدور."
+      : "Walk me through your background and key achievements relevant to this role.",
+    ideal: isArabic
+      ? "تقديم ملخص واضح وموجز لخبراتك وأثرك المهني."
+      : "Provide a clear summary of your experience and measurable impact.",
   };
 
   return (

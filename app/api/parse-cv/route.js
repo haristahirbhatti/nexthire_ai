@@ -424,5 +424,11 @@ function isGoodText(text) {
   const ratio = letters / text.length;
   if (ratio < 0.3) return false;
 
+  // Reject raw PDF internal structure — indicates a failed extraction that
+  // just scraped the file's object/xref syntax instead of real content.
+  const pdfSyntaxMarkers = /\bendobj\b|\bxref\b|\btrailer\b|\/Type\s*\/(Page|Pages|Catalog|Font)|\bstartxref\b|\bFlateDecode\b/g;
+  const markerHits = (text.match(pdfSyntaxMarkers) || []).length;
+  if (markerHits >= 2) return false;
+
   return true;
 }
