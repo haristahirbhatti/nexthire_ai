@@ -180,7 +180,7 @@ export default function CvPrepPage() {
           {step === 5 && (
             <div className="mx-auto max-w-md">
               <PaymentGateway
-                amount="9.99"
+                productId="cv-package"
                 description="Professional CV Preparation & Career Services"
                 onPaid={handlePaid}
               />

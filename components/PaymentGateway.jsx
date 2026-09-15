@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CreditCard, Wallet, ShieldCheck, Loader2, AlertCircle } from "lucide-react";
 
 const METHODS = [
@@ -9,21 +9,62 @@ const METHODS = [
   { id: "visa", label: "Visa", icon: CreditCard },
 ];
 
-export default function PaymentGateway({ amount = "24.00", description, onPaid }) {
+export default function PaymentGateway({
+  productId,
+  amount: initialAmount,
+  description,
+  onPaid,
+}) {
   const [method, setMethod] = useState("visa");
   const [status, setStatus] = useState("idle");
   const [invoiceId, setInvoiceId] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
+  // Determine target product ID
+  const targetProductId =
+    productId ||
+    (description?.toLowerCase().includes("cv") ? "cv-package" : "interview");
+
+  // Dynamic price fetched from server-side source of truth
+  const [liveAmount, setLiveAmount] = useState(
+    initialAmount || (targetProductId === "interview" ? "9.99" : "24.00")
+  );
+
+  // Fetch verified active price from server
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchLivePrice() {
+      try {
+        const res = await fetch("/api/prices");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.products && Array.isArray(data.products)) {
+          const match = data.products.find((p) => p.id === targetProductId);
+          if (match && match.amount && isMounted) {
+            setLiveAmount(Number(match.amount).toFixed(2));
+          }
+        }
+      } catch (err) {
+        // Fallback to initial amount
+      }
+    }
+    fetchLivePrice();
+    return () => {
+      isMounted = false;
+    };
+  }, [targetProductId]);
+
   const pay = async () => {
     setStatus("processing");
     setErrorMsg("");
     try {
+      // NOTE: We send productId. The server resolves price from database,
+      // permanently preventing client-side price tampering.
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount,
+          productId: targetProductId,
           description,
           returnUrl: typeof window !== "undefined" ? window.location.href.split("?")[0] : "",
         }),
@@ -41,10 +82,10 @@ export default function PaymentGateway({ amount = "24.00", description, onPaid }
         return;
       }
 
-      // Stripe key not configured — show error, do NOT grant free access
+      // Stripe key not configured — simulation mode
       if (data.mock) {
         setStatus("error");
-        setErrorMsg("Payment system is being configured. Please try again shortly.");
+        setErrorMsg("Stripe keys not configured. Add STRIPE_SECRET_KEY to enable live checkout.");
         return;
       }
 
@@ -63,7 +104,7 @@ export default function PaymentGateway({ amount = "24.00", description, onPaid }
         <ShieldCheck className="mx-auto h-8 w-8 text-gold-500" />
         <p className="mt-3 font-display text-xl font-semibold text-text-primary">Payment confirmed</p>
         <p className="mt-1 text-sm text-text-secondary">
-          Invoice <span className="font-mono text-gold-400">{invoiceId}</span> — ${amount} via{" "}
+          Invoice <span className="font-mono text-gold-400">{invoiceId}</span> — ${liveAmount} via{" "}
           {METHODS.find((m) => m.id === method)?.label}
         </p>
       </div>
@@ -77,7 +118,7 @@ export default function PaymentGateway({ amount = "24.00", description, onPaid }
           <p className="font-display text-xl font-semibold text-text-primary">Secure checkout</p>
           <p className="text-sm text-text-secondary">{description}</p>
         </div>
-        <p className="font-mono text-2xl font-semibold text-gold-400">${amount}</p>
+        <p className="font-mono text-2xl font-semibold text-gold-400">${liveAmount}</p>
       </div>
 
       {errorMsg && (
@@ -100,7 +141,7 @@ export default function PaymentGateway({ amount = "24.00", description, onPaid }
             }`}
           >
             <Icon className="h-4 w-4" />
-            {label}
+            <span>{label}</span>
           </button>
         ))}
       </div>
@@ -109,22 +150,22 @@ export default function PaymentGateway({ amount = "24.00", description, onPaid }
         type="button"
         onClick={pay}
         disabled={status === "processing"}
-        className="btn-gold mt-6 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-canvas disabled:opacity-70"
+        className="btn-gold mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40"
       >
         {status === "processing" ? (
           <>
-            <Loader2 className="h-4 w-4 animate-spin" /> Connecting to Stripe…
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Preparing secure checkout…
           </>
-        ) : status === "error" ? (
-          "Retry payment"
         ) : (
-          `Pay $${amount} securely`
+          `Pay $${liveAmount} with ${METHODS.find((m) => m.id === method)?.label}`
         )}
       </button>
-      <p className="mt-3 text-center text-xs text-text-muted">
-        Stripe 256-bit encrypted checkout. An electronic invoice is issued automatically.
-      </p>
+
+      <div className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-text-muted">
+        <ShieldCheck className="h-3.5 w-3.5 text-gold-500" />
+        <span>256-bit encrypted checkout via Stripe &middot; Instant access</span>
+      </div>
     </div>
   );
 }
-

@@ -362,7 +362,7 @@ export default function InterviewPage() {
           {stepIndex === 1 && (
             <div className="mx-auto max-w-md">
               <PaymentGateway
-                amount="9.99"
+                productId="interview"
                 description="AI Mock Interview — 15-minute session"
                 onPaid={handlePaid}
               />
