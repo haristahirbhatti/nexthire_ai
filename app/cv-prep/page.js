@@ -60,6 +60,73 @@ export default function CvPrepPage() {
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
 
+  // Load saved session on mount (handles page reloads / post-payment redirects)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const savedPkg = sessionStorage.getItem("nexthire_cv_package") || localStorage.getItem("nexthire_cv_package");
+      if (savedPkg) {
+        const parsed = JSON.parse(savedPkg);
+        if (parsed && (parsed.personalInfo || parsed.summary || parsed.experience)) {
+          setCvPackage(parsed);
+        }
+      }
+
+      const savedTemplate = sessionStorage.getItem("nexthire_cv_templateId") || localStorage.getItem("nexthire_cv_templateId");
+      if (savedTemplate) setTemplateId(Number(savedTemplate));
+
+      const savedLang = sessionStorage.getItem("nexthire_cv_language") || localStorage.getItem("nexthire_cv_language");
+      if (savedLang) setLanguage(savedLang);
+
+      const savedTarget = sessionStorage.getItem("nexthire_cv_targetRole") || localStorage.getItem("nexthire_cv_targetRole");
+      if (savedTarget) setTargetRole(savedTarget);
+
+      const savedPhoto = sessionStorage.getItem("nexthire_cv_photoPreview") || localStorage.getItem("nexthire_cv_photoPreview");
+      if (savedPhoto) setPhotoPreview(savedPhoto);
+
+      const savedText = sessionStorage.getItem("nexthire_cv_text") || localStorage.getItem("nexthire_cv_text");
+      if (savedText) {
+        setCvText(savedText);
+        setCharCount(savedText.length);
+      }
+    } catch (e) {
+      console.warn("Could not restore session:", e);
+    }
+  }, []);
+
+  // Save CV session data
+  const saveCvSession = (pkg, tid, lang, target, photo, rawText) => {
+    if (typeof window === "undefined") return;
+    try {
+      if (pkg) {
+        sessionStorage.setItem("nexthire_cv_package", JSON.stringify(pkg));
+        localStorage.setItem("nexthire_cv_package", JSON.stringify(pkg));
+      }
+      if (tid) {
+        sessionStorage.setItem("nexthire_cv_templateId", String(tid));
+        localStorage.setItem("nexthire_cv_templateId", String(tid));
+      }
+      if (lang) {
+        sessionStorage.setItem("nexthire_cv_language", lang);
+        localStorage.setItem("nexthire_cv_language", lang);
+      }
+      if (target) {
+        sessionStorage.setItem("nexthire_cv_targetRole", target);
+        localStorage.setItem("nexthire_cv_targetRole", target);
+      }
+      if (photo) {
+        sessionStorage.setItem("nexthire_cv_photoPreview", photo);
+        localStorage.setItem("nexthire_cv_photoPreview", photo);
+      }
+      if (rawText) {
+        sessionStorage.setItem("nexthire_cv_text", rawText);
+        localStorage.setItem("nexthire_cv_text", rawText);
+      }
+    } catch (e) {
+      console.warn("Could not save to storage:", e);
+    }
+  };
+
   // Handle file upload and text extraction with visible feedback
   const handleFile = async (file) => {
     setCvFile(file);
@@ -78,6 +145,7 @@ export default function CvPrepPage() {
       }
       setCvText(text);
       setCharCount(text.trim().length);
+      saveCvSession(null, templateId, language, targetRole, photoPreview, text);
     } catch (e) {
       console.error("CV parse failed:", e);
       setExtractError(e.message || "Failed to read your CV document. Please check the file and try again.");
@@ -95,13 +163,24 @@ export default function CvPrepPage() {
     }
     const reader = new FileReader();
     reader.onload = (event) => {
-      setPhotoPreview(event.target.result);
+      const photoData = event.target.result;
+      setPhotoPreview(photoData);
+      saveCvSession(null, templateId, language, targetRole, photoData, cvText);
     };
     reader.readAsDataURL(file);
   };
 
   const removePhoto = () => {
     setPhotoPreview("");
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("nexthire_cv_photoPreview");
+      localStorage.removeItem("nexthire_cv_photoPreview");
+    }
+  };
+
+  const handleTemplateSelect = (id) => {
+    setTemplateId(id);
+    saveCvSession(null, id, language, targetRole, photoPreview, cvText);
   };
 
   // Trigger real AI generation
@@ -127,10 +206,15 @@ export default function CvPrepPage() {
         throw new Error(data.error || "Failed to generate CV package.");
       }
       if (data.package) {
-        if (photoPreview && !data.package.personalInfo.photoUrl) {
-          data.package.personalInfo.photoUrl = photoPreview;
+        let finalPkg = data.package;
+        if (photoPreview && !finalPkg.personalInfo?.photoUrl) {
+          finalPkg.personalInfo = {
+            ...finalPkg.personalInfo,
+            photoUrl: photoPreview,
+          };
         }
-        setCvPackage(data.package);
+        setCvPackage(finalPkg);
+        saveCvSession(finalPkg, templateId, language, targetRole, photoPreview, cvText);
       }
     } catch (err) {
       console.error("CV generation failed:", err);
@@ -185,7 +269,24 @@ export default function CvPrepPage() {
     setTemplateId(1);
     setLanguage("English");
     setTargetRole("");
+    setPhotoPreview("");
     setCvPackage(null);
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.removeItem("nexthire_cv_package");
+        sessionStorage.removeItem("nexthire_cv_templateId");
+        sessionStorage.removeItem("nexthire_cv_language");
+        sessionStorage.removeItem("nexthire_cv_targetRole");
+        sessionStorage.removeItem("nexthire_cv_photoPreview");
+        sessionStorage.removeItem("nexthire_cv_text");
+        localStorage.removeItem("nexthire_cv_package");
+        localStorage.removeItem("nexthire_cv_templateId");
+        localStorage.removeItem("nexthire_cv_language");
+        localStorage.removeItem("nexthire_cv_targetRole");
+        localStorage.removeItem("nexthire_cv_photoPreview");
+        localStorage.removeItem("nexthire_cv_text");
+      } catch (_) {}
+    }
     router.push("/");
   };
 
@@ -223,14 +324,17 @@ export default function CvPrepPage() {
           {step === 1 && (
             <TemplateStep
               templateId={templateId}
-              setTemplateId={setTemplateId}
+              setTemplateId={handleTemplateSelect}
               onNext={next}
             />
           )}
           {step === 2 && (
             <LanguageStep
               language={language}
-              setLanguage={setLanguage}
+              setLanguage={(lang) => {
+                setLanguage(lang);
+                saveCvSession(cvPackage, templateId, lang, targetRole, photoPreview, cvText);
+              }}
               onStartGenerate={startGeneration}
             />
           )}
@@ -635,7 +739,14 @@ function GenerateStep({ generating, generateError, onRetry, onBack, onDone }) {
 
 function ReviewStep({ cvPackage, onAgree }) {
   const [activeTab, setActiveTab] = useState("cv");
-  const pkg = cvPackage || {};
+  let pkg = cvPackage;
+  if (!pkg && typeof window !== "undefined") {
+    try {
+      const saved = sessionStorage.getItem("nexthire_cv_package") || localStorage.getItem("nexthire_cv_package");
+      if (saved) pkg = JSON.parse(saved);
+    } catch (_) {}
+  }
+  pkg = pkg || {};
 
   return (
     <div className="card-dark rounded-2xl p-6 sm:p-9 animate-fadeIn space-y-6">
@@ -761,7 +872,23 @@ function ReviewStep({ cvPackage, onAgree }) {
 
 function DownloadStep({ cvPackage, templateId, onStartOver }) {
   const [copied, setCopied] = useState(false);
-  const pkg = cvPackage || {};
+  
+  let pkg = cvPackage;
+  let activeTemplateId = templateId;
+  if (typeof window !== "undefined") {
+    try {
+      if (!pkg) {
+        const saved = sessionStorage.getItem("nexthire_cv_package") || localStorage.getItem("nexthire_cv_package");
+        if (saved) pkg = JSON.parse(saved);
+      }
+      if (!activeTemplateId) {
+        const savedTid = sessionStorage.getItem("nexthire_cv_templateId") || localStorage.getItem("nexthire_cv_templateId");
+        if (savedTid) activeTemplateId = Number(savedTid);
+      }
+    } catch (_) {}
+  }
+  pkg = pkg || {};
+  activeTemplateId = activeTemplateId || 1;
 
   const copyText = () => {
     const text = `
@@ -796,7 +923,7 @@ ${pkg.coverLetter?.signOff || ""}
         {/* Option 1: Word Document */}
         <button
           type="button"
-          onClick={() => downloadWordDocument(pkg, templateId)}
+          onClick={() => downloadWordDocument(pkg, activeTemplateId)}
           className="btn-gold flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold shadow-gold"
         >
           <FileDown className="h-4 w-4" />
@@ -806,7 +933,7 @@ ${pkg.coverLetter?.signOff || ""}
         {/* Option 2: PDF Document */}
         <button
           type="button"
-          onClick={() => downloadPDFDocument(pkg, templateId)}
+          onClick={() => downloadPDFDocument(pkg, activeTemplateId)}
           className="flex items-center justify-center gap-2 rounded-xl border border-gold-500/50 bg-gold-500/10 py-3.5 text-sm font-semibold text-gold-400 hover:bg-gold-500/20 transition"
         >
           <FileDown className="h-4 w-4" />
