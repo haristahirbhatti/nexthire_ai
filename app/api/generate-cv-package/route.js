@@ -49,6 +49,8 @@ LANGUAGE TRANSLATION DIRECTIVE (MANDATORY):
 - The greeting and sign-off in the cover letter should also be in ${language}.
 `;
 
+    const extractedCandidateName = extractCandidateName(cvText);
+
     const prompt = `
 You are an Elite Executive Resume Architect, Certified Professional Resume Writer (CPRW), and ATS Optimization Master.
 Your task is to re-structure, dramatically polish, and fully expand the candidate's CV into an authoritative, high-density, comprehensive ATS-optimized career package.
@@ -56,13 +58,15 @@ Your task is to re-structure, dramatically polish, and fully expand the candidat
 ${translationDirective}
 
 CRITICAL DIRECTIVES:
-1. FACTUAL INTEGRITY: DO NOT invent fake company names, fake university names, or fake candidate names. Keep factual details 100% truthful to the candidate's actual history.
+1. FACTUAL INTEGRITY & REAL DATA ONLY:
+   - DO NOT invent fake company names, fake university names, or fake candidate names like "John Doe".
+   - Extract the candidate's REAL full name from the top of the CV${extractedCandidateName ? ` (Detected name: "${extractedCandidateName}")` : ""}.
+   - Extract all actual company names, job titles, dates, degrees, and locations directly from the CV text.
 2. EXTRACT EVERYTHING: Extract the candidate's REAL full name, email, phone, city/country location, ALL work history, education, certifications, projects, and languages.
 3. HIGH ATS DENSITY & RICHNESS:
-   - Resumes must NOT be thin or brief. They must look like a complete, professional, high-impact resume.
-   - For EVERY work experience entry, write 4 to 6 powerful, metric-driven achievement bullet points.
+   - For EVERY work experience entry in the CV, write 4 to 6 powerful, metric-driven achievement bullet points based on what the candidate actually did.
    - Use the standard Google X-Y-Z formula: "Accomplished [X], as measured by [Y], by doing [Z]" with strong power action verbs (e.g., Spearheaded, Orchestrated, Engineered, Accelerated, Overhauled, Scaled, Maximized, Streamlined).
-   - Extract and synthesize 15 to 25 relevant technical skills, tools, domain competencies, and methodologies.
+   - Extract 15 to 25 relevant technical skills, tools, domain competencies, and methodologies mentioned in or directly related to the candidate's experience.
    - If the candidate CV has certifications or licenses, extract them.
    - If the candidate CV has major projects, extract them.
 4. LOCATION: Extract the actual City, Country (e.g. "Lahore, Pakistan", "London, UK", "New York, NY", "Dubai, UAE"). Never output literal placeholder text like "City, Country".
@@ -79,10 +83,10 @@ ${cvText}
 Return a strictly valid JSON object adhering to this comprehensive schema:
 {
   "personalInfo": {
-    "fullName": "<Candidate's Real Full Name>",
-    "email": "<Candidate's Real Email>",
-    "phone": "<Candidate's Real Phone>",
-    "location": "<Candidate's Real City, Country>",
+    "fullName": "${extractedCandidateName || "<Candidate's Real Full Name from CV>"}",
+    "email": "<Candidate's Real Email from CV>",
+    "phone": "<Candidate's Real Phone from CV>",
+    "location": "<Candidate's Real City, Country from CV>",
     "linkedIn": "<Candidate's LinkedIn URL if found, or linkedin.com/in/candidate>",
     "targetTitle": "${targetRole || "<Candidate's Target or Current Professional Title>"}"
   },
@@ -96,24 +100,24 @@ Return a strictly valid JSON object adhering to this comprehensive schema:
   },
   "experience": [
     {
-      "company": "<Real Company Name>",
-      "role": "<Real Job Title>",
+      "company": "<Real Company Name from CV>",
+      "role": "<Real Job Title from CV>",
       "period": "<Real Dates/Years from CV, e.g. Jan 2021 – Present>",
-      "location": "<City, Country>",
+      "location": "<City, Country from CV>",
       "highlights": [
-        "<Detailed bullet point in ${language} with strong action verb, technical context, and quantifiable metric/result>",
-        "<Detailed bullet point in ${language} describing operational or strategic impact with measurable result>",
-        "<Detailed bullet point in ${language} highlighting process optimization, tool usage, or workflow improvement>",
-        "<Detailed bullet point in ${language} demonstrating cross-functional collaboration, leadership, or revenue/cost impact>",
-        "<Detailed bullet point in ${language} demonstrating problem-solving and key deliverable completion>"
+        "<Detailed bullet point in ${language} with strong action verb, technical context, and quantifiable metric/result based on CV>",
+        "<Detailed bullet point in ${language} describing operational or strategic impact with measurable result based on CV>",
+        "<Detailed bullet point in ${language} highlighting process optimization, tool usage, or workflow improvement based on CV>",
+        "<Detailed bullet point in ${language} demonstrating cross-functional collaboration, leadership, or revenue/cost impact based on CV>",
+        "<Detailed bullet point in ${language} demonstrating problem-solving and key deliverable completion based on CV>"
       ]
     }
   ],
   "education": [
     {
-      "institution": "<Real Institution Name>",
-      "degree": "<Real Degree/Major>",
-      "year": "<Real Graduation Year or Period>",
+      "institution": "<Real Institution Name from CV>",
+      "degree": "<Real Degree/Major from CV>",
+      "year": "<Real Graduation Year or Period from CV>",
       "location": "<City, Country if known>",
       "details": "<Honors, GPA, or relevant coursework if mentioned in CV>"
     }
@@ -140,8 +144,8 @@ Return a strictly valid JSON object adhering to this comprehensive schema:
   ],
   "coverLetter": {
     "greeting": "<Appropriate formal greeting in ${language}, e.g. Dear Hiring Team / Dear Hiring Manager>",
-    "body": "<Comprehensive 4-paragraph tailored cover letter in ${language} with strong opening hook, paragraph highlighting relevant career achievements, paragraph explaining cultural & role fit, and confident closing call to action>",
-    "signOff": "<Appropriate sign-off in ${language}>\\n<Candidate's Real Full Name>"
+    "body": "<Comprehensive 4-paragraph tailored cover letter in ${language} with strong opening hook, paragraph highlighting relevant career achievements from CV, paragraph explaining cultural & role fit, and confident closing call to action>",
+    "signOff": "<Appropriate sign-off in ${language}>\\n${extractedCandidateName || "<Candidate's Real Full Name>"}"
   },
   "linkedInProfile": {
     "headline": "<High-converting LinkedIn headline with title, key skill keywords, and value statement in ${language}>",
@@ -157,8 +161,8 @@ Return a strictly valid JSON object adhering to this comprehensive schema:
 `;
 
     const systemMessage = isEnglish
-      ? "You are a master executive resume writer and ATS specialist. You produce only valid JSON conforming strictly to the requested schema. Generate rich, detailed, comprehensive resumes with 4-6 metric-driven bullet points per role, 15-20 skills, certifications, and complete sections."
-      : `You are a master executive resume writer, ATS specialist, and translator. You produce only valid JSON conforming strictly to the requested schema. FULLY TRANSLATE all written text content into ${language}. Keep proper nouns (names, companies, universities) unchanged.`;
+      ? "You are a master executive resume writer and ATS specialist. You output only valid JSON conforming strictly to the requested schema. Never use placeholder names like 'John Doe'. Strictly extract and retain the candidate's real name, real company names, and real experience."
+      : `You are a master executive resume writer, ATS specialist, and translator. You produce only valid JSON conforming strictly to the requested schema. FULLY TRANSLATE all written text content into ${language}. Keep proper nouns (names, companies, universities) unchanged. Never use placeholder names like 'John Doe'.`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -166,7 +170,7 @@ Return a strictly valid JSON object adhering to this comprehensive schema:
         { role: "system", content: systemMessage },
         { role: "user", content: prompt },
       ],
-      temperature: 0.25,
+      temperature: 0.2,
       response_format: { type: "json_object" },
     });
 
@@ -177,6 +181,14 @@ Return a strictly valid JSON object adhering to this comprehensive schema:
     if (resultJson.personalInfo) {
       if (photoUrl) {
         resultJson.personalInfo.photoUrl = photoUrl;
+      }
+      if (
+        extractedCandidateName &&
+        (!resultJson.personalInfo.fullName ||
+          resultJson.personalInfo.fullName.toLowerCase().includes("john doe") ||
+          resultJson.personalInfo.fullName.toLowerCase().includes("candidate name"))
+      ) {
+        resultJson.personalInfo.fullName = extractedCandidateName;
       }
       if (resultJson.personalInfo.location?.toLowerCase().includes("city") && resultJson.personalInfo.location?.toLowerCase().includes("country")) {
         resultJson.personalInfo.location = extractLocation(cvText, cvText.split("\n"));
@@ -603,4 +615,34 @@ function extractLocation(text, lines) {
   }
 
   return ""; // Return clean empty string instead of literal "City, Country"
+}
+
+/**
+ * Helper: Extracts Candidate's real Full Name from top lines of CV text
+ */
+function extractCandidateName(cvText) {
+  if (!cvText) return "";
+  const lines = cvText.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+  for (const line of lines.slice(0, 8)) {
+    const clean = line.replace(/^[•\-\*#|]\s*/, "").trim();
+    if (
+      !clean.includes("@") &&
+      !clean.includes("http") &&
+      !clean.includes("www.") &&
+      !/\d/.test(clean) &&
+      !clean.toLowerCase().includes("resume") &&
+      !clean.toLowerCase().includes("curriculum") &&
+      !clean.toLowerCase().includes("vitae") &&
+      !clean.toLowerCase().includes("profile") &&
+      !clean.toLowerCase().includes("experience") &&
+      !clean.toLowerCase().includes("contact") &&
+      !clean.toLowerCase().includes("summary") &&
+      clean.length >= 2 &&
+      clean.length <= 40 &&
+      /^[A-Za-z\s.'-]+$/.test(clean)
+    ) {
+      return clean;
+    }
+  }
+  return "";
 }

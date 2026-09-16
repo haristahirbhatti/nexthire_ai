@@ -325,6 +325,8 @@ export default function CvPrepPage() {
             <TemplateStep
               templateId={templateId}
               setTemplateId={handleTemplateSelect}
+              cvText={cvText}
+              targetRole={targetRole}
               onNext={next}
             />
           )}
@@ -490,10 +492,43 @@ function UploadStep({
   );
 }
 
-function TemplateStep({ templateId, setTemplateId, onNext }) {
+function TemplateStep({ templateId, setTemplateId, cvText, targetRole, onNext }) {
   const PAGE_SIZE = 18;
   const items = getTemplatePage(1, PAGE_SIZE);
   const selectedTemplate = getTemplateById(templateId);
+
+  // Extract candidate name from top lines of CV text
+  const candidateName = (() => {
+    if (!cvText) return "";
+    const lines = cvText.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+    for (const line of lines.slice(0, 8)) {
+      const clean = line.replace(/^[•\-\*#|]\s*/, "").trim();
+      if (
+        !clean.includes("@") &&
+        !clean.includes("http") &&
+        !clean.includes("www.") &&
+        !/\d/.test(clean) &&
+        !clean.toLowerCase().includes("resume") &&
+        !clean.toLowerCase().includes("curriculum") &&
+        !clean.toLowerCase().includes("vitae") &&
+        !clean.toLowerCase().includes("profile") &&
+        !clean.toLowerCase().includes("experience") &&
+        !clean.toLowerCase().includes("contact") &&
+        clean.length >= 2 &&
+        clean.length <= 35 &&
+        /^[A-Za-z\s.'-]+$/.test(clean)
+      ) {
+        return clean;
+      }
+    }
+    return "";
+  })();
+
+  const previewCandidateData = {
+    name: candidateName || "YOUR NAME",
+    title: targetRole || "Senior Professional",
+    location: "City, Country",
+  };
 
   return (
     <div className="card-dark rounded-2xl p-6 sm:p-9 animate-fadeIn space-y-6">
@@ -503,7 +538,7 @@ function TemplateStep({ templateId, setTemplateId, onNext }) {
           Choose a design template
         </h2>
         <p className="mt-2 text-sm text-text-secondary">
-          {TEMPLATE_COUNT} professional layouts — each previewed with real dummy CV content.
+          {TEMPLATE_COUNT} professional layouts — styled for ATS readability and executive impact.
         </p>
         {templateId && (
           <p className="mt-2 text-xs font-mono text-gold-400">
@@ -549,7 +584,7 @@ function TemplateStep({ templateId, setTemplateId, onNext }) {
                     pointerEvents: "none",
                     userSelect: "none",
                   }}
-                  dangerouslySetInnerHTML={{ __html: getPreviewHTML(t) }}
+                  dangerouslySetInnerHTML={{ __html: getPreviewHTML(t, previewCandidateData) }}
                 />
 
                 {/* Selected checkmark badge */}

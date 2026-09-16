@@ -203,9 +203,9 @@ export function getTemplateById(id) {
 
 /**
  * Returns inline HTML for a real mini-resume preview card.
- * Uses dummy "John Doe" content so the card looks like an actual CV.
+ * Uses real candidate info if available, or clean placeholder content.
  */
-export function getPreviewHTML(template) {
+export function getPreviewHTML(template, candidateData = {}) {
   const t = template;
   const accent = t.accent;
   const isTwo = t.columns === 2;
@@ -214,47 +214,55 @@ export function getPreviewHTML(template) {
   const isDarkSidebar = !!t.sidebarBg;
   const fontFamily = t.font;
 
+  const name = (candidateData.name || "CANDIDATE NAME").toUpperCase();
+  const title = candidateData.title || "Senior Professional";
+  const location = candidateData.location || "City, Country";
+  const email = candidateData.email || "candidate@email.com";
+  const summary = candidateData.summary || "Results-driven professional with proven track record in optimizing key workflows, executing strategic goals, and delivering quantifiable outcomes.";
+  const skills = candidateData.skills?.length ? candidateData.skills.slice(0, 5).join(" · ") : "Strategic Planning · Project Leadership<br/>Process Optimization · Core Execution";
+  const company = candidateData.company || "Recent Enterprise";
+
   const headerSection = isCentered
     ? `<div style="text-align:center;border-bottom:2.5px solid ${accent};padding-bottom:5px;margin-bottom:7px;">
-        <div style="font-size:12px;font-weight:800;color:#111;letter-spacing:0.5px;">JOHN DOE</div>
-        <div style="font-size:7.5px;color:${accent};font-weight:700;margin-top:2px;">Senior Financial Analyst</div>
-        <div style="font-size:6px;color:#666;margin-top:2px;">Dubai, UAE · john@email.com · +971 50 123 4567</div>
+        <div style="font-size:12px;font-weight:800;color:#111;letter-spacing:0.5px;">${name}</div>
+        <div style="font-size:7.5px;color:${accent};font-weight:700;margin-top:2px;">${title}</div>
+        <div style="font-size:6px;color:#666;margin-top:2px;">${location} · ${email}</div>
       </div>`
     : `<div style="border-bottom:2.5px solid ${accent};padding-bottom:5px;margin-bottom:7px;">
-        <div style="font-size:12px;font-weight:800;color:#111;">JOHN DOE</div>
-        <div style="font-size:7.5px;color:${accent};font-weight:700;margin-top:2px;">Senior Financial Analyst</div>
-        <div style="font-size:6px;color:#666;margin-top:2px;">Dubai, UAE · john@email.com</div>
+        <div style="font-size:12px;font-weight:800;color:#111;">${name}</div>
+        <div style="font-size:7.5px;color:${accent};font-weight:700;margin-top:2px;">${title}</div>
+        <div style="font-size:6px;color:#666;margin-top:2px;">${location} · ${email}</div>
       </div>`;
 
   const summaryBlock = `
     <div style="margin-bottom:6px;">
       <div style="font-size:6px;font-weight:800;text-transform:uppercase;color:${accent};border-bottom:1px solid ${accent};padding-bottom:1px;margin-bottom:3px;letter-spacing:0.4px;">Summary</div>
-      <div style="font-size:5px;color:#333;line-height:1.4;">Results-driven analyst with 8+ yrs optimizing P&L across MENA. Led $50M planning cycles with 18% variance reduction.</div>
+      <div style="font-size:5px;color:#333;line-height:1.4;">${summary}</div>
     </div>`;
 
   const skillsBlock = (dark) => `
     <div style="margin-bottom:6px;">
       <div style="font-size:6px;font-weight:800;text-transform:uppercase;color:${accent};border-bottom:1px solid ${accent};padding-bottom:1px;margin-bottom:3px;">Skills</div>
-      <div style="font-size:5px;color:${dark ? '#ccc' : '#333'};line-height:1.5;">Financial Modeling · SAP ERP<br/>Power BI · Risk Analysis · Excel</div>
+      <div style="font-size:5px;color:${dark ? '#ccc' : '#333'};line-height:1.5;">${skills}</div>
     </div>`;
 
   const expBlock = `
     <div style="margin-bottom:6px;">
       <div style="font-size:6px;font-weight:800;text-transform:uppercase;color:${accent};border-bottom:1px solid ${accent};padding-bottom:1px;margin-bottom:3px;">Experience</div>
       <div style="margin-bottom:4px;">
-        <div style="font-size:5.5px;font-weight:700;color:#111;">Sr. Analyst — Emirates NBD <span style="float:right;color:#666;font-weight:400;">2020–Now</span></div>
-        <div style="font-size:4.5px;color:#444;line-height:1.4;margin-top:1px;">• Led $50M budget cycle, cut variance 18%<br/>• Built C-suite Power BI dashboards</div>
+        <div style="font-size:5.5px;font-weight:700;color:#111;">${title} — ${company} <span style="float:right;color:#666;font-weight:400;">2021–Now</span></div>
+        <div style="font-size:4.5px;color:#444;line-height:1.4;margin-top:1px;">• Led high-priority initiatives with measurable ROI<br/>• Spearheaded workflow optimizations</div>
       </div>
       <div>
-        <div style="font-size:5.5px;font-weight:700;color:#111;">Analyst — Abu Dhabi Finance <span style="float:right;color:#666;font-weight:400;">2017–20</span></div>
-        <div style="font-size:4.5px;color:#444;line-height:1.4;margin-top:1px;">• Managed AED 200M portfolio, +12% YoY</div>
+        <div style="font-size:5.5px;font-weight:700;color:#111;">Professional Lead — Career History <span style="float:right;color:#666;font-weight:400;">2018–21</span></div>
+        <div style="font-size:4.5px;color:#444;line-height:1.4;margin-top:1px;">• Delivered key strategic deliverables on schedule</div>
       </div>
     </div>`;
 
   const eduBlock = (dark) => `
     <div>
       <div style="font-size:6px;font-weight:800;text-transform:uppercase;color:${accent};border-bottom:1px solid ${accent};padding-bottom:1px;margin-bottom:3px;">Education</div>
-      <div style="font-size:5px;color:${dark ? '#ccc' : '#333'};">BSc Finance — Univ. of Dubai (2017)</div>
+      <div style="font-size:5px;color:${dark ? '#ccc' : '#333'};">Bachelor's Degree — University / Higher Education</div>
     </div>`;
 
   if (isTwo) {
