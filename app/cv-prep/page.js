@@ -823,6 +823,56 @@ function ReviewStep({ cvPackage, onAgree }) {
                 </div>
               ))}
             </div>
+
+            {pkg.projects && pkg.projects.length > 0 && (
+              <div>
+                <p className="font-bold uppercase text-text-primary border-b border-canvas-border pb-1 mb-2">Key Projects</p>
+                {pkg.projects.map((p, idx) => (
+                  <div key={idx} className="mb-2">
+                    <p className="font-semibold text-text-primary">{p.name} {p.period ? `(${p.period})` : ""}</p>
+                    <p className="text-text-secondary text-[11px]">{p.description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {pkg.education && pkg.education.length > 0 && (
+              <div>
+                <p className="font-bold uppercase text-text-primary border-b border-canvas-border pb-1 mb-2">Education</p>
+                {pkg.education.map((edu, idx) => (
+                  <div key={idx} className="mb-1">
+                    <p className="font-semibold text-text-primary">{edu.degree} — <span className="text-gold-400">{edu.institution}</span> ({edu.year})</p>
+                    {edu.details && <p className="text-[11px] text-text-muted">{edu.details}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {pkg.certifications && pkg.certifications.length > 0 && (
+              <div>
+                <p className="font-bold uppercase text-text-primary border-b border-canvas-border pb-1 mb-2">Certifications</p>
+                <div className="flex flex-wrap gap-2">
+                  {pkg.certifications.map((c, idx) => (
+                    <span key={idx} className="rounded bg-canvas-raised border border-canvas-border px-2 py-1 text-[11px] text-text-primary">
+                      🏆 {c.name} {c.issuer ? `(${c.issuer})` : ""}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {pkg.languages && pkg.languages.length > 0 && (
+              <div>
+                <p className="font-bold uppercase text-text-primary border-b border-canvas-border pb-1 mb-2">Languages</p>
+                <div className="flex flex-wrap gap-2">
+                  {pkg.languages.map((l, idx) => (
+                    <span key={idx} className="text-[11px] text-text-secondary">
+                      🌐 {l.language} {l.proficiency ? `(${l.proficiency})` : ""}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

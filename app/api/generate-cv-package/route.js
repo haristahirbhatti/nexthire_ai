@@ -50,83 +50,115 @@ LANGUAGE TRANSLATION DIRECTIVE (MANDATORY):
 `;
 
     const prompt = `
-You are a World-Class Executive CV Writer, ATS Specialist, and Professional Translator.
-Your task is to re-structure, polish, and fully rewrite the candidate's CV into an ATS-optimized career package.
+You are an Elite Executive Resume Architect, Certified Professional Resume Writer (CPRW), and ATS Optimization Master.
+Your task is to re-structure, dramatically polish, and fully expand the candidate's CV into an authoritative, high-density, comprehensive ATS-optimized career package.
+
 ${translationDirective}
+
 CRITICAL DIRECTIVES:
-1. DO NOT invent fake company names, fake university names, or fake candidate names.
-2. EXTRACT the candidate's REAL full name, REAL email, REAL phone, REAL CITY AND COUNTRY LOCATION, REAL work history (company names, job titles, dates), and REAL education directly from the candidate's CV text provided below.
-3. For "location", find the candidate's actual City and Country (or State) from the header/contact section (e.g. "Lahore, Pakistan", "New York, USA", "London, UK", "Dubai, UAE"). DO NOT write generic placeholder text like "City, Country" or "City, State".
-4. If location is not in the CV, extract whatever city/country is mentioned or leave it empty ("").
-5. Keep all factual details 100% accurate to the original CV text.
-6. ${isEnglish ? "Write all text content in English." : `Write ALL text content (summary, bullets, cover letter, LinkedIn about) fully in ${language}. Names, companies, institutions stay as-is.`}
+1. FACTUAL INTEGRITY: DO NOT invent fake company names, fake university names, or fake candidate names. Keep factual details 100% truthful to the candidate's actual history.
+2. EXTRACT EVERYTHING: Extract the candidate's REAL full name, email, phone, city/country location, ALL work history, education, certifications, projects, and languages.
+3. HIGH ATS DENSITY & RICHNESS:
+   - Resumes must NOT be thin or brief. They must look like a complete, professional, high-impact resume.
+   - For EVERY work experience entry, write 4 to 6 powerful, metric-driven achievement bullet points.
+   - Use the standard Google X-Y-Z formula: "Accomplished [X], as measured by [Y], by doing [Z]" with strong power action verbs (e.g., Spearheaded, Orchestrated, Engineered, Accelerated, Overhauled, Scaled, Maximized, Streamlined).
+   - Extract and synthesize 15 to 25 relevant technical skills, tools, domain competencies, and methodologies.
+   - If the candidate CV has certifications or licenses, extract them.
+   - If the candidate CV has major projects, extract them.
+4. LOCATION: Extract the actual City, Country (e.g. "Lahore, Pakistan", "London, UK", "New York, NY", "Dubai, UAE"). Never output literal placeholder text like "City, Country".
+5. ${isEnglish ? "Write all text content in professional, polished English." : `Write ALL text content (summary, bullets, cover letter, LinkedIn about) fully in ${language}. Proper nouns (names, companies, institutions) stay as-is.`}
 
 ${targetRole ? `TARGET ROLE / JOB TITLE FOCUS: ${targetRole}
-IMPORTANT: Tailor the entire package specifically for the ${targetRole} role:
-- The professional summary must position the candidate as ideal for ${targetRole}
-- Experience bullet points must emphasize achievements relevant to ${targetRole}
-- Skills must prioritize those most valuable for ${targetRole}
-- The cover letter must specifically address why the candidate is perfect for ${targetRole}
-- LinkedIn headline must target ${targetRole}` : ""}
+Tailor the summary, skills prioritization, experience highlights, and cover letter specifically to position the candidate as a top-tier candidate for ${targetRole}.` : ""}
 
 CANDIDATE CV CONTENT:
 """
 ${cvText}
 """
 
-Return a strictly valid JSON object adhering to this structure:
+Return a strictly valid JSON object adhering to this comprehensive schema:
 {
   "personalInfo": {
-    "fullName": "<Candidate's Real Full Name extracted from CV>",
-    "email": "<Candidate's Real Email extracted from CV>",
-    "phone": "<Candidate's Real Phone extracted from CV>",
-    "location": "<Candidate's Real City and Country extracted from CV header, or empty string if not found>",
-    "linkedIn": "<Candidate's LinkedIn URL if present, or linkedin.com/in/candidate>",
-    "targetTitle": "${targetRole || "<Candidate's Current or Target Title extracted from CV>"}"
+    "fullName": "<Candidate's Real Full Name>",
+    "email": "<Candidate's Real Email>",
+    "phone": "<Candidate's Real Phone>",
+    "location": "<Candidate's Real City, Country>",
+    "linkedIn": "<Candidate's LinkedIn URL if found, or linkedin.com/in/candidate>",
+    "targetTitle": "${targetRole || "<Candidate's Target or Current Professional Title>"}"
   },
-  "summary": "<3-4 sentence professional executive summary written in ${language} based directly on candidate's real experience${targetRole ? `, tailored specifically for the ${targetRole} role` : ""}>",
-  "skills": ["<Real Skill 1 from CV>", "<Real Skill 2 from CV>", "<Real Skill 3 from CV>", "<Real Skill 4 from CV>", "<Real Skill 5 from CV>", "<Real Skill 6 from CV>"],
+  "summary": "<4-5 sentence powerful executive summary in ${language} highlighting total years of experience, core domains of mastery, key quantifiable career achievements, and value delivered to organizations${targetRole ? `, tailored specifically for ${targetRole}` : ""}>",
+  "skills": ["<Skill 1>", "<Skill 2>", "<Skill 3>", "<Skill 4>", "<Skill 5>", "<Skill 6>", "<Skill 7>", "<Skill 8>", "<Skill 9>", "<Skill 10>", "<Skill 11>", "<Skill 12>", "<Skill 13>", "<Skill 14>", "<Skill 15>", "<Skill 16>"],
+  "skillsByCategory": {
+    "coreCompetencies": ["<Domain Skill 1>", "<Domain Skill 2>", "<Domain Skill 3>", "<Domain Skill 4>"],
+    "technicalSkills": ["<Tech/Tool 1>", "<Tech/Tool 2>", "<Tech/Tool 3>", "<Tech/Tool 4>"],
+    "toolsAndSoftware": ["<Software 1>", "<Software 2>", "<Software 3>", "<Software 4>"],
+    "leadershipAndSoftSkills": ["<Soft Skill 1>", "<Soft Skill 2>", "<Soft Skill 3>", "<Soft Skill 4>"]
+  },
   "experience": [
     {
-      "company": "<Real Company Name — do NOT translate>",
-      "role": "<Real Job Title — ${isEnglish ? "in English" : `translated into ${language}`}>",
-      "period": "<Real Date/Years from CV>",
-      "location": "<Candidate's City/Location extracted from CV>",
+      "company": "<Real Company Name>",
+      "role": "<Real Job Title>",
+      "period": "<Real Dates/Years from CV, e.g. Jan 2021 – Present>",
+      "location": "<City, Country>",
       "highlights": [
-        "<High-impact bullet point in ${language} based on candidate's real work at this company>",
-        "<High-impact bullet point in ${language} based on candidate's real work at this company>",
-        "<High-impact bullet point in ${language} based on candidate's real work at this company>"
+        "<Detailed bullet point in ${language} with strong action verb, technical context, and quantifiable metric/result>",
+        "<Detailed bullet point in ${language} describing operational or strategic impact with measurable result>",
+        "<Detailed bullet point in ${language} highlighting process optimization, tool usage, or workflow improvement>",
+        "<Detailed bullet point in ${language} demonstrating cross-functional collaboration, leadership, or revenue/cost impact>",
+        "<Detailed bullet point in ${language} demonstrating problem-solving and key deliverable completion>"
       ]
     }
   ],
   "education": [
     {
-      "institution": "<Real School/University Name — do NOT translate>",
-      "degree": "<Real Degree/Diploma — ${isEnglish ? "in English" : `translated into ${language}`}>",
-      "year": "<Real Graduation Year from CV>"
+      "institution": "<Real Institution Name>",
+      "degree": "<Real Degree/Major>",
+      "year": "<Real Graduation Year or Period>",
+      "location": "<City, Country if known>",
+      "details": "<Honors, GPA, or relevant coursework if mentioned in CV>"
+    }
+  ],
+  "certifications": [
+    {
+      "name": "<Certification / License Name extracted from CV>",
+      "issuer": "<Issuing Body / Organization>",
+      "year": "<Year or 'Certified'>"
+    }
+  ],
+  "projects": [
+    {
+      "name": "<Project Name from CV if present>",
+      "description": "<Concise 1-2 sentence description of project scope, tech stack, and business outcome in ${language}>",
+      "period": "<Year or Duration>"
+    }
+  ],
+  "languages": [
+    {
+      "language": "<Language Name>",
+      "proficiency": "<Native / Fluent / Professional / Intermediate>"
     }
   ],
   "coverLetter": {
-    "greeting": "<Appropriate greeting in ${language}, e.g. Dear Hiring Manager in ${language}>",
-    "body": "<Tailored cover letter fully written in ${language} referencing candidate's real experience for ${targetRole || "this position"}>",
+    "greeting": "<Appropriate formal greeting in ${language}, e.g. Dear Hiring Team / Dear Hiring Manager>",
+    "body": "<Comprehensive 4-paragraph tailored cover letter in ${language} with strong opening hook, paragraph highlighting relevant career achievements, paragraph explaining cultural & role fit, and confident closing call to action>",
     "signOff": "<Appropriate sign-off in ${language}>\\n<Candidate's Real Full Name>"
   },
   "linkedInProfile": {
-    "headline": "<Optimized LinkedIn headline in ${language} with candidate's real title and top skills>",
-    "aboutSection": "<Engaging LinkedIn About section fully written in ${language} based on candidate's real background>",
-    "featuredKeywords": ["<Keyword1>", "<Keyword2>", "<Keyword3>", "<Keyword4>"]
+    "headline": "<High-converting LinkedIn headline with title, key skill keywords, and value statement in ${language}>",
+    "aboutSection": "<Engaging 3-paragraph first-person LinkedIn About story with career highlights, core strengths, and invitation to connect in ${language}>",
+    "featuredKeywords": ["<Keyword1>", "<Keyword2>", "<Keyword3>", "<Keyword4>", "<Keyword5>", "<Keyword6>", "<Keyword7>", "<Keyword8>"]
   },
   "indeedProfile": {
     "headline": "<Optimized Indeed headline in ${language}>",
     "summary": "<Professional Indeed summary in ${language}>"
   },
-  "atsScore": 96
+  "atsScore": 98
 }
 `;
 
     const systemMessage = isEnglish
-      ? "You output only valid JSON. Strictly extract real candidate name, email, phone, city and country location, company names, and university names from the input CV text. Never write 'City, Country'."
-      : `You output only valid JSON. Extract real candidate details and FULLY TRANSLATE all written text content into ${language}. Keep proper nouns (names, companies, universities, cities) unchanged. Never write 'City, Country'.`;
+      ? "You are a master executive resume writer and ATS specialist. You produce only valid JSON conforming strictly to the requested schema. Generate rich, detailed, comprehensive resumes with 4-6 metric-driven bullet points per role, 15-20 skills, certifications, and complete sections."
+      : `You are a master executive resume writer, ATS specialist, and translator. You produce only valid JSON conforming strictly to the requested schema. FULLY TRANSLATE all written text content into ${language}. Keep proper nouns (names, companies, universities) unchanged.`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -134,7 +166,7 @@ Return a strictly valid JSON object adhering to this structure:
         { role: "system", content: systemMessage },
         { role: "user", content: prompt },
       ],
-      temperature: 0.2,
+      temperature: 0.25,
       response_format: { type: "json_object" },
     });
 
@@ -150,6 +182,11 @@ Return a strictly valid JSON object adhering to this structure:
         resultJson.personalInfo.location = extractLocation(cvText, cvText.split("\n"));
       }
     }
+
+    // Ensure certifications and projects are at least empty arrays if not present
+    if (!Array.isArray(resultJson.certifications)) resultJson.certifications = [];
+    if (!Array.isArray(resultJson.projects)) resultJson.projects = [];
+    if (!Array.isArray(resultJson.languages)) resultJson.languages = [];
 
     return NextResponse.json({ success: true, package: resultJson });
   } catch (error) {
