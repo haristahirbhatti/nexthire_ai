@@ -13,6 +13,11 @@ import {
   Sparkles,
   Copy,
   CheckCheck,
+  AlertCircle,
+  CheckCircle2,
+  User,
+  Camera,
+  X,
 } from "lucide-react";
 import StepRail from "@/components/StepRail";
 import UploadBox from "@/components/UploadBox";
@@ -41,44 +46,95 @@ export default function CvPrepPage() {
   const [step, setStep] = useState(0);
   const [cvFile, setCvFile] = useState(null);
   const [cvText, setCvText] = useState("");
+  const [extracting, setExtracting] = useState(false);
+  const [extractError, setExtractError] = useState("");
+  const [charCount, setCharCount] = useState(0);
+  const [photoPreview, setPhotoPreview] = useState("");
   const [templateId, setTemplateId] = useState(1);
   const [language, setLanguage] = useState("English");
   const [targetRole, setTargetRole] = useState("");
 
   const [cvPackage, setCvPackage] = useState(null);
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState("");
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
 
-  // Handle file upload and text extraction
+  // Handle file upload and text extraction with visible feedback
   const handleFile = async (file) => {
     setCvFile(file);
+    setCvText("");
+    setExtractError("");
+    setCharCount(0);
     if (!file) return;
+
+    setExtracting(true);
     try {
       const text = await parseCVFile(file);
+      if (!text || text.trim().length < 30) {
+        throw new Error(
+          "Could not extract readable text from this file. The file may be an empty document or a scanned image without selectable text. Please upload a clear text PDF or Word document."
+        );
+      }
       setCvText(text);
+      setCharCount(text.trim().length);
     } catch (e) {
-      console.warn("PDF parse fallback:", e);
+      console.error("CV parse failed:", e);
+      setExtractError(e.message || "Failed to read your CV document. Please check the file and try again.");
+    } finally {
+      setExtracting(false);
     }
+  };
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Photo must be less than 5MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setPhotoPreview(event.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removePhoto = () => {
+    setPhotoPreview("");
   };
 
   // Trigger real AI generation
   const startGeneration = async () => {
     setGenerating(true);
+    setGenerateError("");
     next(); // Move to Step 3 (Generate)
 
     try {
       const res = await fetch("/api/generate-cv-package", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cvText, language, templateId, targetRole }),
+        body: JSON.stringify({
+          cvText,
+          language,
+          templateId,
+          targetRole,
+          photoUrl: photoPreview,
+        }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to generate CV package.");
+      }
       if (data.package) {
+        if (photoPreview && !data.package.personalInfo.photoUrl) {
+          data.package.personalInfo.photoUrl = photoPreview;
+        }
         setCvPackage(data.package);
       }
     } catch (err) {
       console.error("CV generation failed:", err);
+      setGenerateError(err.message || "CV generation failed. Please try again.");
     } finally {
       setGenerating(false);
     }
@@ -126,7 +182,7 @@ export default function CvPrepPage() {
     setStep(0);
     setCvFile(null);
     setCvText("");
-    setTemplateId("modern-1");
+    setTemplateId(1);
     setLanguage("English");
     setTargetRole("");
     setCvPackage(null);
@@ -152,6 +208,13 @@ export default function CvPrepPage() {
             <UploadStep
               cvFile={cvFile}
               onFile={handleFile}
+              cvText={cvText}
+              extracting={extracting}
+              extractError={extractError}
+              charCount={charCount}
+              photoPreview={photoPreview}
+              onPhotoUpload={handlePhotoUpload}
+              onRemovePhoto={removePhoto}
               targetRole={targetRole}
               setTargetRole={setTargetRole}
               onNext={next}
@@ -172,7 +235,13 @@ export default function CvPrepPage() {
             />
           )}
           {step === 3 && (
-            <GenerateStep generating={generating} onDone={next} />
+            <GenerateStep
+              generating={generating}
+              generateError={generateError}
+              onRetry={startGeneration}
+              onBack={() => setStep(2)}
+              onDone={next}
+            />
           )}
           {step === 4 && (
             <ReviewStep cvPackage={cvPackage} onAgree={next} />
@@ -195,7 +264,22 @@ export default function CvPrepPage() {
   );
 }
 
-function UploadStep({ cvFile, onFile, targetRole, setTargetRole, onNext }) {
+function UploadStep({
+  cvFile,
+  onFile,
+  cvText,
+  extracting,
+  extractError,
+  charCount,
+  photoPreview,
+  onPhotoUpload,
+  onRemovePhoto,
+  targetRole,
+  setTargetRole,
+  onNext,
+}) {
+  const canContinue = !!cvText && cvText.trim().length >= 30 && !extracting;
+
   return (
     <div className="card-dark rounded-2xl p-6 sm:p-9 animate-fadeIn space-y-6">
       <div>
@@ -209,6 +293,73 @@ function UploadStep({ cvFile, onFile, targetRole, setTargetRole, onNext }) {
       </div>
 
       <UploadBox file={cvFile} onFile={onFile} />
+
+      {/* Extraction feedback */}
+      {extracting && (
+        <div className="flex items-center gap-2.5 rounded-xl border border-gold-500/30 bg-gold-500/10 px-4 py-3 font-mono text-xs text-gold-400 animate-pulse">
+          <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
+          <span>Reading CV document — extracting text, career history, and skills…</span>
+        </div>
+      )}
+
+      {extractError && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-400 animate-fadeIn">
+          <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-semibold">Text Extraction Failed</p>
+            <p>{extractError}</p>
+          </div>
+        </div>
+      )}
+
+      {!extracting && !extractError && charCount > 0 && (
+        <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 font-mono text-xs text-emerald-400 animate-fadeIn">
+          <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+          <span>Successfully extracted {charCount.toLocaleString()} characters from your CV. Ready to tailor.</span>
+        </div>
+      )}
+
+      {/* Optional Candidate Photo Upload */}
+      <div className="rounded-xl border border-canvas-border bg-canvas-mid p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="block font-mono text-xs uppercase tracking-wider text-text-muted">
+              PROFILE PHOTO (OPTIONAL)
+            </label>
+            <p className="text-[11px] text-text-secondary mt-0.5">
+              Upload a headshot for photo-ready templates, or skip to use an initials monogram badge.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-center gap-4">
+          <div className="relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-canvas-border bg-canvas-card">
+            {photoPreview ? (
+              <img src={photoPreview} alt="Profile photo" className="h-full w-full object-cover" />
+            ) : (
+              <User className="h-6 w-6 text-text-muted" />
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="btn-secondary cursor-pointer rounded-lg px-3 py-1.5 text-xs font-medium inline-flex items-center gap-1.5">
+              <Camera className="h-3.5 w-3.5" />
+              {photoPreview ? "Change photo" : "Upload photo"}
+              <input type="file" accept="image/*" onChange={onPhotoUpload} className="hidden" />
+            </label>
+            {photoPreview && (
+              <button
+                type="button"
+                onClick={onRemovePhoto}
+                className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-rose-400 hover:bg-rose-500/10"
+              >
+                <X className="h-3.5 w-3.5" />
+                Remove
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
       <div>
         <label className="mb-2 block font-mono text-xs uppercase tracking-wider text-text-muted">
@@ -225,7 +376,7 @@ function UploadStep({ cvFile, onFile, targetRole, setTargetRole, onNext }) {
       <button
         type="button"
         onClick={onNext}
-        disabled={!cvFile}
+        disabled={!canContinue}
         className="btn-gold flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40"
       >
         Continue to template selection
@@ -391,10 +542,11 @@ function LanguageStep({ language, setLanguage, onStartGenerate }) {
   );
 }
 
-function GenerateStep({ generating, onDone }) {
+function GenerateStep({ generating, generateError, onRetry, onBack, onDone }) {
   const [taskIndex, setTaskIndex] = useState(0);
 
   useEffect(() => {
+    if (!generating) return;
     const timer = setInterval(() => {
       setTaskIndex((i) => {
         if (i < TASKS.length - 1) return i + 1;
@@ -402,14 +554,49 @@ function GenerateStep({ generating, onDone }) {
       });
     }, 700);
     return () => clearInterval(timer);
-  }, []);
+  }, [generating]);
 
   useEffect(() => {
-    if (!generating && taskIndex >= TASKS.length - 2) {
+    if (!generating && !generateError && taskIndex >= TASKS.length - 2) {
       const timeout = setTimeout(onDone, 500);
       return () => clearTimeout(timeout);
     }
-  }, [generating, taskIndex, onDone]);
+  }, [generating, generateError, taskIndex, onDone]);
+
+  if (generateError) {
+    return (
+      <div className="card-dark rounded-2xl p-8 text-center sm:p-12 animate-fadeIn space-y-6">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+          <AlertCircle className="h-6 w-6" />
+        </div>
+        <div>
+          <h2 className="font-display text-2xl font-semibold text-text-primary">
+            Generation Failed
+          </h2>
+          <p className="mt-2 text-sm text-red-400 max-w-md mx-auto">
+            {generateError}
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onBack}
+            className="w-full sm:w-auto rounded-xl border border-canvas-border px-5 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary transition"
+          >
+            ← Back to Language
+          </button>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="btn-gold w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Retry Generation
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="card-dark rounded-2xl p-8 text-center sm:p-12 animate-fadeIn space-y-6">

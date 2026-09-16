@@ -8,18 +8,31 @@ export async function POST(req) {
 
   try {
     const body = await req.json();
-    cvText = body.cvText || "";
+    cvText = (body.cvText || "").trim();
     language = body.language || "English";
-    targetRole = body.targetRole || "";
+    targetRole = (body.targetRole || "").trim();
     const templateId = body.templateId || "modern";
+    const photoUrl = body.photoUrl || "";
+
+    // Server-side guard: Reject empty or unreadable CV text
+    if (!cvText || cvText.length < 30) {
+      return NextResponse.json(
+        { error: "CV text is empty or could not be extracted. Please upload a valid CV document with readable text." },
+        { status: 422 }
+      );
+    }
 
     const openai = getOpenAIClient();
 
     if (!openai) {
       // Fallback local smart parser if OpenAI API key is missing
+      const localPkg = parseCVStructure(cvText, language, targetRole);
+      if (photoUrl && localPkg?.personalInfo) {
+        localPkg.personalInfo.photoUrl = photoUrl;
+      }
       return NextResponse.json({
         success: true,
-        package: parseCVStructure(cvText, language, targetRole),
+        package: localPkg,
       });
     }
 
@@ -128,8 +141,11 @@ Return a strictly valid JSON object adhering to this structure:
     const responseText = completion.choices[0].message.content.trim();
     const resultJson = JSON.parse(responseText);
 
-    // Sanitize any residual placeholder strings
+    // Sanitize any residual placeholder strings and attach photoUrl
     if (resultJson.personalInfo) {
+      if (photoUrl) {
+        resultJson.personalInfo.photoUrl = photoUrl;
+      }
       if (resultJson.personalInfo.location?.toLowerCase().includes("city") && resultJson.personalInfo.location?.toLowerCase().includes("country")) {
         resultJson.personalInfo.location = extractLocation(cvText, cvText.split("\n"));
       }
@@ -138,9 +154,13 @@ Return a strictly valid JSON object adhering to this structure:
     return NextResponse.json({ success: true, package: resultJson });
   } catch (error) {
     console.error("[generate-cv-package] Error:", error);
+    const fallbackPkg = parseCVStructure(cvText, language, targetRole);
+    if (photoUrl && fallbackPkg?.personalInfo) {
+      fallbackPkg.personalInfo.photoUrl = photoUrl;
+    }
     return NextResponse.json({
       success: true,
-      package: parseCVStructure(cvText, language, targetRole),
+      package: fallbackPkg,
       warning: "Generated using smart local extraction parser.",
     });
   }
