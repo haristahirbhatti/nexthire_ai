@@ -18,6 +18,8 @@ import {
   User,
   Camera,
   X,
+  Palette,
+  Image as ImageIcon,
 } from "lucide-react";
 import StepRail from "@/components/StepRail";
 import UploadBox from "@/components/UploadBox";
@@ -27,6 +29,7 @@ import { TEMPLATE_COUNT, getTemplatePage, getPreviewHTML, getTemplateById } from
 import { parseCVFile } from "@/lib/parsePDF";
 import { useAppState } from "@/lib/store";
 import { downloadWordDocument, downloadPDFDocument } from "@/lib/exportDocument";
+import { extractPaletteFromFile } from "@/lib/extractColors";
 
 const STEPS = ["Upload", "Template", "Language", "Generate", "Review", "Payment", "Download"];
 
@@ -51,6 +54,7 @@ export default function CvPrepPage() {
   const [charCount, setCharCount] = useState(0);
   const [photoPreview, setPhotoPreview] = useState("");
   const [templateId, setTemplateId] = useState(1);
+  const [customPalette, setCustomPalette] = useState(null);
   const [language, setLanguage] = useState("English");
   const [targetRole, setTargetRole] = useState("");
 
@@ -75,6 +79,13 @@ export default function CvPrepPage() {
       const savedTemplate = sessionStorage.getItem("nexthire_cv_templateId") || localStorage.getItem("nexthire_cv_templateId");
       if (savedTemplate) setTemplateId(Number(savedTemplate));
 
+      const savedPalette = sessionStorage.getItem("nexthire_cv_customPalette") || localStorage.getItem("nexthire_cv_customPalette");
+      if (savedPalette) {
+        try {
+          setCustomPalette(JSON.parse(savedPalette));
+        } catch (_) {}
+      }
+
       const savedLang = sessionStorage.getItem("nexthire_cv_language") || localStorage.getItem("nexthire_cv_language");
       if (savedLang) setLanguage(savedLang);
 
@@ -95,7 +106,7 @@ export default function CvPrepPage() {
   }, []);
 
   // Save CV session data
-  const saveCvSession = (pkg, tid, lang, target, photo, rawText) => {
+  const saveCvSession = (pkg, tid, lang, target, photo, rawText, palette = customPalette) => {
     if (typeof window === "undefined") return;
     try {
       if (pkg) {
@@ -105,6 +116,13 @@ export default function CvPrepPage() {
       if (tid) {
         sessionStorage.setItem("nexthire_cv_templateId", String(tid));
         localStorage.setItem("nexthire_cv_templateId", String(tid));
+      }
+      if (palette) {
+        sessionStorage.setItem("nexthire_cv_customPalette", JSON.stringify(palette));
+        localStorage.setItem("nexthire_cv_customPalette", JSON.stringify(palette));
+      } else {
+        sessionStorage.removeItem("nexthire_cv_customPalette");
+        localStorage.removeItem("nexthire_cv_customPalette");
       }
       if (lang) {
         sessionStorage.setItem("nexthire_cv_language", lang);
@@ -327,6 +345,11 @@ export default function CvPrepPage() {
               setTemplateId={handleTemplateSelect}
               cvText={cvText}
               targetRole={targetRole}
+              customPalette={customPalette}
+              setCustomPalette={(pal) => {
+                setCustomPalette(pal);
+                saveCvSession(cvPackage, templateId, language, targetRole, photoPreview, cvText, pal);
+              }}
               onNext={next}
             />
           )}
@@ -362,7 +385,12 @@ export default function CvPrepPage() {
             </div>
           )}
           {step === 6 && (
-            <DownloadStep cvPackage={cvPackage} templateId={templateId} onStartOver={startOver} />
+            <DownloadStep
+              cvPackage={cvPackage}
+              templateId={templateId}
+              customPalette={customPalette}
+              onStartOver={startOver}
+            />
           )}
         </div>
       </div>
@@ -492,10 +520,47 @@ function UploadStep({
   );
 }
 
-function TemplateStep({ templateId, setTemplateId, cvText, targetRole, onNext }) {
+function TemplateStep({
+  templateId,
+  setTemplateId,
+  cvText,
+  targetRole,
+  customPalette,
+  setCustomPalette,
+  onNext,
+}) {
   const PAGE_SIZE = 18;
   const items = getTemplatePage(1, PAGE_SIZE);
   const selectedTemplate = getTemplateById(templateId);
+
+  const [paletteLoading, setPaletteLoading] = useState(false);
+  const [inspirationPreview, setInspirationPreview] = useState(null);
+  const [paletteError, setPaletteError] = useState("");
+
+  const handleInspirationUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPaletteLoading(true);
+    setPaletteError("");
+    setInspirationPreview(URL.createObjectURL(file));
+
+    try {
+      const extracted = await extractPaletteFromFile(file);
+      setCustomPalette(extracted);
+    } catch (err) {
+      console.error("Color extraction failed:", err);
+      setPaletteError("Could not extract colors from that image. Please try another PNG or JPG.");
+    } finally {
+      setPaletteLoading(false);
+    }
+  };
+
+  const handleResetPalette = () => {
+    setCustomPalette(null);
+    setInspirationPreview(null);
+    setPaletteError("");
+  };
 
   // Extract candidate name from top lines of CV text
   const candidateName = (() => {
@@ -538,19 +603,96 @@ function TemplateStep({ templateId, setTemplateId, cvText, targetRole, onNext })
           Choose a design template
         </h2>
         <p className="mt-2 text-sm text-text-secondary">
-          {TEMPLATE_COUNT} professional layouts — styled for ATS readability and executive impact.
+          {TEMPLATE_COUNT} signature designer layouts — styled for ATS readability, executive impact, and multi-format export.
         </p>
         {templateId && (
           <p className="mt-2 text-xs font-mono text-gold-400">
             ✓ Selected: <span className="font-semibold">{selectedTemplate?.name}</span>
             <span className="ml-2 opacity-60">{selectedTemplate?.columns === 2 ? "· 2-Column" : "· 1-Column"}</span>
+            {customPalette && <span className="ml-2 text-emerald-400 font-sans font-medium">· Custom Color Theme Active</span>}
           </p>
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+      {/* Optional Inspiration Image Palette Extractor */}
+      <div className="rounded-xl border border-canvas-border bg-canvas-mid p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-gold-500/10 text-gold-400 border border-gold-500/20 mt-0.5">
+              <Palette className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                Auto-Theme with Reference / Inspiration Image
+                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-gold-500/20 text-gold-400">Optional</span>
+              </h3>
+              <p className="text-xs text-text-secondary mt-0.5">
+                Upload a screenshot or photo of any resume/brand palette — we automatically extract its colors and apply them across all layouts.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
+            <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gold-500/40 bg-gold-500/10 hover:bg-gold-500/20 text-gold-400 text-xs font-semibold transition">
+              {paletteLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
+              {customPalette ? "Change Image" : "Upload Reference Image"}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleInspirationUpload}
+                className="hidden"
+                disabled={paletteLoading}
+              />
+            </label>
+
+            {customPalette && (
+              <button
+                type="button"
+                onClick={handleResetPalette}
+                className="p-2 rounded-lg border border-canvas-border hover:border-red-500/50 text-text-muted hover:text-red-400 text-xs transition"
+                title="Reset to default template colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Live Extracted Swatches */}
+        {customPalette && (
+          <div className="mt-4 pt-3 border-t border-canvas-border flex flex-wrap items-center gap-3">
+            <span className="text-xs text-text-secondary font-mono">Extracted Palette:</span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-canvas-card border border-canvas-border">
+                <div className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: customPalette.primary }} />
+                <span className="text-[11px] font-mono text-text-primary uppercase">{customPalette.primary}</span>
+                <span className="text-[10px] text-text-muted">(Primary)</span>
+              </div>
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-canvas-card border border-canvas-border">
+                <div className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: customPalette.secondary }} />
+                <span className="text-[11px] font-mono text-text-primary uppercase">{customPalette.secondary}</span>
+                <span className="text-[10px] text-text-muted">(Secondary)</span>
+              </div>
+            </div>
+            {inspirationPreview && (
+              <img
+                src={inspirationPreview}
+                alt="Inspiration reference"
+                className="w-7 h-7 rounded border border-canvas-border object-cover ml-auto"
+              />
+            )}
+          </div>
+        )}
+
+        {paletteError && (
+          <p className="mt-2 text-xs text-red-400">{paletteError}</p>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         {items.map((t) => {
           const selected = templateId === t.id;
+          const activeAccent = customPalette?.primary || t.accent;
           return (
             <button
               key={t.id}
@@ -567,7 +709,7 @@ function TemplateStep({ templateId, setTemplateId, cvText, targetRole, onNext })
                 className="relative w-full overflow-hidden rounded-lg shadow-md"
                 style={{
                   aspectRatio: "3/4",
-                  border: selected ? `2px solid ${t.accent}` : "1px solid rgba(255,255,255,0.10)",
+                  border: selected ? `2px solid ${activeAccent}` : "1px solid rgba(255,255,255,0.10)",
                   background: "#fff",
                 }}
               >
@@ -584,23 +726,23 @@ function TemplateStep({ templateId, setTemplateId, cvText, targetRole, onNext })
                     pointerEvents: "none",
                     userSelect: "none",
                   }}
-                  dangerouslySetInnerHTML={{ __html: getPreviewHTML(t, previewCandidateData) }}
+                  dangerouslySetInnerHTML={{ __html: getPreviewHTML(t, previewCandidateData, customPalette) }}
                 />
 
                 {/* Selected checkmark badge */}
                 {selected && (
                   <div
                     className="absolute right-2 top-2 rounded-full p-1 shadow-lg z-10"
-                    style={{ backgroundColor: t.accent }}
+                    style={{ backgroundColor: activeAccent }}
                   >
-                    <Check className="h-3 w-3 text-black" />
+                    <Check className="h-3 w-3 text-white" />
                   </div>
                 )}
 
                 {/* Layout type label overlay */}
                 <div
                   className="absolute bottom-0 left-0 right-0 px-2 py-1 text-[7.5px] font-mono tracking-wide z-10"
-                  style={{ backgroundColor: "rgba(0,0,0,0.55)", color: t.accent }}
+                  style={{ backgroundColor: "rgba(0,0,0,0.65)", color: activeAccent }}
                 >
                   {t.tone.toUpperCase()} · {t.columns === 2 ? "2-COL" : "1-COL"}
                 </div>
@@ -616,8 +758,8 @@ function TemplateStep({ templateId, setTemplateId, cvText, targetRole, onNext })
                 <span
                   className="rounded px-1.5 py-0.5 text-[9px] font-mono flex-shrink-0 ml-1"
                   style={{
-                    backgroundColor: selected ? t.accent + "33" : "rgba(255,255,255,0.05)",
-                    color: selected ? t.accent : "#888",
+                    backgroundColor: selected ? activeAccent + "33" : "rgba(255,255,255,0.05)",
+                    color: selected ? activeAccent : "#888",
                   }}
                 >
                   {t.tone}
@@ -955,11 +1097,13 @@ function ReviewStep({ cvPackage, onAgree }) {
   );
 }
 
-function DownloadStep({ cvPackage, templateId, onStartOver }) {
+function DownloadStep({ cvPackage, templateId, customPalette, onStartOver }) {
   const [copied, setCopied] = useState(false);
   
   let pkg = cvPackage;
   let activeTemplateId = templateId;
+  let activePalette = customPalette;
+
   if (typeof window !== "undefined") {
     try {
       if (!pkg) {
@@ -969,6 +1113,10 @@ function DownloadStep({ cvPackage, templateId, onStartOver }) {
       if (!activeTemplateId) {
         const savedTid = sessionStorage.getItem("nexthire_cv_templateId") || localStorage.getItem("nexthire_cv_templateId");
         if (savedTid) activeTemplateId = Number(savedTid);
+      }
+      if (!activePalette) {
+        const savedPal = sessionStorage.getItem("nexthire_cv_customPalette") || localStorage.getItem("nexthire_cv_customPalette");
+        if (savedPal) activePalette = JSON.parse(savedPal);
       }
     } catch (_) {}
   }
@@ -1008,7 +1156,7 @@ ${pkg.coverLetter?.signOff || ""}
         {/* Option 1: Word Document */}
         <button
           type="button"
-          onClick={() => downloadWordDocument(pkg, activeTemplateId)}
+          onClick={() => downloadWordDocument(pkg, activeTemplateId, activePalette)}
           className="btn-gold flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold shadow-gold"
         >
           <FileDown className="h-4 w-4" />
@@ -1018,7 +1166,7 @@ ${pkg.coverLetter?.signOff || ""}
         {/* Option 2: PDF Document */}
         <button
           type="button"
-          onClick={() => downloadPDFDocument(pkg, activeTemplateId)}
+          onClick={() => downloadPDFDocument(pkg, activeTemplateId, activePalette)}
           className="flex items-center justify-center gap-2 rounded-xl border border-gold-500/50 bg-gold-500/10 py-3.5 text-sm font-semibold text-gold-400 hover:bg-gold-500/20 transition"
         >
           <FileDown className="h-4 w-4" />
