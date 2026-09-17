@@ -175,7 +175,7 @@ export function getTemplateById(id) {
 
 /**
  * Returns inline HTML for real mini-resume preview cards in the template selection step.
- * Adapts to the exact visual style of each template family with the candidate's real data.
+ * Perfectly fills 100% width and 100% height of the card box edge-to-edge with no dead margins.
  */
 export function getPreviewHTML(template, candidateData = {}, customPalette = null) {
   const t = template;
@@ -196,28 +196,48 @@ export function getPreviewHTML(template, candidateData = {}, customPalette = nul
   // ── Layout 1: Left Crimson Sidebar (Jordan Mitchell style) ────────
   if (t.layoutFamily === "left-sidebar") {
     return `
-      <div style="font-family:${fontFamily};background:#fff;display:flex;height:100%;box-sizing:border-box;">
-        <div style="width:34%;background:${sidebarBg};color:#fff;padding:8px 6px;display:flex;flex-direction:column;">
-          <div style="width:24px;height:24px;background:#fff;color:${accent};font-weight:900;font-size:9px;display:flex;align-items:center;justify-content:center;border-radius:2px;margin-bottom:6px;">${initials}</div>
-          <div style="font-size:8px;font-weight:800;letter-spacing:0.3px;line-height:1.2;">${name}</div>
-          <div style="font-size:6px;opacity:0.85;margin-top:2px;margin-bottom:8px;">${title}</div>
-          
-          <div style="font-size:5.5px;font-weight:700;text-transform:uppercase;border-bottom:0.5px solid rgba(255,255,255,0.4);padding-bottom:1px;margin-bottom:3px;">Contact</div>
-          <div style="font-size:4.5px;opacity:0.9;line-height:1.4;margin-bottom:6px;">${location}<br/>${email}</div>
+      <div style="font-family:${fontFamily};background:#ffffff;display:flex;width:100%;height:100%;box-sizing:border-box;color:#1e293b;overflow:hidden;">
+        <!-- Left Sidebar (Full Height) -->
+        <div style="width:36%;background:${sidebarBg};color:#ffffff;padding:12px 10px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;">
+          <div>
+            <div style="width:28px;height:28px;background:#ffffff;color:${accent};font-weight:900;font-size:11px;display:flex;align-items:center;justify-content:center;border-radius:3px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.2);">${initials}</div>
+            <div style="font-size:10px;font-weight:800;letter-spacing:0.3px;line-height:1.2;color:#ffffff;">${name}</div>
+            <div style="font-size:7.5px;opacity:0.9;margin-top:2px;margin-bottom:10px;color:#f8fafc;">${title}</div>
+            
+            <div style="font-size:7px;font-weight:700;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.35);padding-bottom:2px;margin-bottom:4px;letter-spacing:0.5px;">Contact</div>
+            <div style="font-size:6.5px;opacity:0.95;line-height:1.45;margin-bottom:10px;">${location}<br/>${email}</div>
 
-          <div style="font-size:5.5px;font-weight:700;text-transform:uppercase;border-bottom:0.5px solid rgba(255,255,255,0.4);padding-bottom:1px;margin-bottom:3px;">Skills</div>
-          <div style="font-size:4.5px;opacity:0.9;line-height:1.4;">• Strategy &amp; Ops<br/>• Project Mgmt<br/>• Team Leadership</div>
-        </div>
-        <div style="flex:1;padding:8px 10px;">
-          <div style="font-size:6.5px;font-weight:800;color:${accent};border-bottom:1px solid ${accent};padding-bottom:1px;margin-bottom:3px;text-transform:uppercase;">Experience</div>
-          <div style="margin-bottom:4px;">
-            <div style="font-size:5.5px;font-weight:700;color:#111;">${title} <span style="float:right;color:#666;font-weight:400;">2021–Now</span></div>
-            <div style="font-size:5px;color:${accent};font-weight:600;">Enterprise Corp</div>
-            <div style="font-size:4.5px;color:#444;line-height:1.3;margin-top:1px;">• Led strategic operational improvements<br/>• Optimized key workflow deliverables</div>
+            <div style="font-size:7px;font-weight:700;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.35);padding-bottom:2px;margin-bottom:4px;letter-spacing:0.5px;">Skills</div>
+            <div style="font-size:6.5px;opacity:0.95;line-height:1.45;">• Strategic Leadership<br/>• Project Operations<br/>• Process Optimization</div>
           </div>
-          <div style="font-size:6.5px;font-weight:800;color:${accent};border-bottom:1px solid ${accent};padding-bottom:1px;margin-top:6px;margin-bottom:3px;text-transform:uppercase;">Education</div>
-          <div style="font-size:5px;color:#111;font-weight:700;">Bachelor's Degree</div>
-          <div style="font-size:4.5px;color:#666;">University &bull; Graduated</div>
+          <div>
+            <div style="font-size:7px;font-weight:700;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.35);padding-bottom:2px;margin-bottom:3px;letter-spacing:0.5px;">Education</div>
+            <div style="font-size:6.5px;font-weight:600;">Bachelor's Degree</div>
+            <div style="font-size:6px;opacity:0.8;">University &bull; Honors</div>
+          </div>
+        </div>
+
+        <!-- Right Main Column -->
+        <div style="flex:1;padding:12px 12px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;">
+          <div>
+            <div style="font-size:8px;font-weight:800;color:${accent};border-bottom:1.5px solid ${accent};padding-bottom:2px;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Executive Summary</div>
+            <div style="font-size:6.5px;color:#475569;line-height:1.4;margin-bottom:10px;">Results-driven professional with proven expertise in orchestrating cross-functional initiatives, scaling business processes, and delivering measurable impact.</div>
+
+            <div style="font-size:8px;font-weight:800;color:${accent};border-bottom:1.5px solid ${accent};padding-bottom:2px;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Work Experience</div>
+            <div style="margin-bottom:6px;">
+              <div style="font-size:7.5px;font-weight:700;color:#0f172a;">${title} <span style="float:right;color:#64748b;font-weight:500;font-size:6.5px;">2021–Present</span></div>
+              <div style="font-size:7px;color:${accent};font-weight:600;">Enterprise Solutions Corp</div>
+              <div style="font-size:6.5px;color:#334155;line-height:1.35;margin-top:2px;">• Directed high-priority strategic initiatives and operational roadmaps<br/>• Improved workflow turnaround and team efficiency by 32%</div>
+            </div>
+            <div style="margin-bottom:6px;">
+              <div style="font-size:7.5px;font-weight:700;color:#0f172a;">Senior Associate <span style="float:right;color:#64748b;font-weight:500;font-size:6.5px;">2018–2021</span></div>
+              <div style="font-size:7px;color:${accent};font-weight:600;">Global Systems Inc</div>
+              <div style="font-size:6.5px;color:#334155;line-height:1.35;margin-top:2px;">• Managed end-to-end deliverables with 100% client satisfaction</div>
+            </div>
+          </div>
+          <div style="border-top:1px solid #e2e8f0;padding-top:4px;">
+            <div style="font-size:6.5px;color:#64748b;font-weight:600;">🏆 Certified Specialist &bull; Continuous Improvement Award</div>
+          </div>
         </div>
       </div>
     `;
@@ -226,28 +246,40 @@ export function getPreviewHTML(template, candidateData = {}, customPalette = nul
   // ── Layout 2: Dark Header Split (Kai Carter Dark style) ────────────
   if (t.layoutFamily === "dark-header-split") {
     return `
-      <div style="font-family:${fontFamily};background:#fff;height:100%;box-sizing:border-box;display:flex;flex-direction:column;">
-        <div style="background:#18181b;color:#fff;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-family:${fontFamily};background:#ffffff;display:flex;flex-direction:column;width:100%;height:100%;box-sizing:border-box;overflow:hidden;">
+        <!-- Top Dark Banner -->
+        <div style="background:#18181b;color:#ffffff;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;">
           <div>
-            <div style="font-size:9.5px;font-weight:800;letter-spacing:0.5px;">${name}</div>
-            <div style="font-size:6.5px;color:#a1a1aa;text-transform:uppercase;margin-top:1px;">${title}</div>
-            <div style="font-size:5px;color:#71717a;margin-top:2px;">${location} &bull; ${email}</div>
+            <div style="font-size:12px;font-weight:900;letter-spacing:0.5px;color:#ffffff;">${name}</div>
+            <div style="font-size:8px;color:#a1a1aa;text-transform:uppercase;font-weight:600;margin-top:1px;">${title}</div>
+            <div style="font-size:6.5px;color:#71717a;margin-top:3px;">${location} &bull; ${email}</div>
           </div>
-          <div style="font-size:16px;opacity:0.3;font-weight:900;">✕✕</div>
+          <div style="font-size:22px;opacity:0.25;font-weight:900;line-height:1;letter-spacing:-2px;">✕✕</div>
         </div>
-        <div style="display:flex;flex:1;padding:8px 10px;gap:8px;">
-          <div style="flex:1;">
-            <div style="font-size:6px;font-weight:800;text-transform:uppercase;color:#111;border-bottom:1px solid #111;padding-bottom:1px;margin-bottom:3px;">Profile</div>
-            <div style="font-size:4.5px;color:#444;line-height:1.3;margin-bottom:6px;">Proven track record delivering quantifiable results across business initiatives.</div>
-            <div style="font-size:6px;font-weight:800;text-transform:uppercase;color:#111;border-bottom:1px solid #111;padding-bottom:1px;margin-bottom:3px;">Experience</div>
-            <div style="font-size:5px;font-weight:700;color:#111;">${title} &mdash; Corp</div>
-            <div style="font-size:4.5px;color:#444;line-height:1.3;">• Spearheaded key deliverables<br/>• Boosted throughput by 25%</div>
+
+        <!-- Split Body -->
+        <div style="display:flex;flex:1;padding:12px 14px;gap:12px;box-sizing:border-box;">
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;">
+            <div>
+              <div style="font-size:7.5px;font-weight:800;text-transform:uppercase;color:#18181b;border-bottom:1.5px solid #18181b;padding-bottom:2px;margin-bottom:4px;letter-spacing:0.5px;">Executive Profile</div>
+              <div style="font-size:6.5px;color:#334155;line-height:1.4;margin-bottom:8px;">Accomplished leader recognized for driving operational excellence and high-yield strategic initiatives across diverse business functions.</div>
+
+              <div style="font-size:7.5px;font-weight:800;text-transform:uppercase;color:#18181b;border-bottom:1.5px solid #18181b;padding-bottom:2px;margin-bottom:4px;letter-spacing:0.5px;">Experience</div>
+              <div style="font-size:7.5px;font-weight:700;color:#0f172a;">${title} &mdash; Prime Corp</div>
+              <div style="font-size:6.5px;color:#475569;line-height:1.35;margin-top:2px;">• Spearheaded core operational transformation programs<br/>• Boosted workflow efficiency and ROI by 28%</div>
+            </div>
+            <div style="font-size:6.5px;color:#64748b;font-weight:600;">Key Strengths: Scalability &bull; Strategic Vision</div>
           </div>
-          <div style="width:38%;">
-            <div style="font-size:6px;font-weight:800;text-transform:uppercase;color:#111;border-bottom:1px solid #111;padding-bottom:1px;margin-bottom:3px;">Skills</div>
-            <div style="font-size:4.5px;color:#333;line-height:1.4;margin-bottom:6px;">• Strategy<br/>• Workflow Tuning<br/>• Team Execution</div>
-            <div style="font-size:6px;font-weight:800;text-transform:uppercase;color:#111;border-bottom:1px solid #111;padding-bottom:1px;margin-bottom:3px;">Education</div>
-            <div style="font-size:4.5px;color:#333;font-weight:600;">BSc Degree &bull; Higher Ed</div>
+
+          <div style="width:36%;border-left:1px solid #e4e4e7;padding-left:10px;display:flex;flex-direction:column;justify-content:space-between;">
+            <div>
+              <div style="font-size:7.5px;font-weight:800;text-transform:uppercase;color:#18181b;border-bottom:1.5px solid #18181b;padding-bottom:2px;margin-bottom:4px;letter-spacing:0.5px;">Skills</div>
+              <div style="font-size:6.5px;color:#334155;line-height:1.45;margin-bottom:8px;">• Strategy Roadmap<br/>• Workflow Tuning<br/>• Team Mentorship<br/>• Data Analysis</div>
+
+              <div style="font-size:7.5px;font-weight:800;text-transform:uppercase;color:#18181b;border-bottom:1.5px solid #18181b;padding-bottom:2px;margin-bottom:4px;letter-spacing:0.5px;">Education</div>
+              <div style="font-size:6.5px;color:#0f172a;font-weight:700;">Bachelor of Science</div>
+              <div style="font-size:6px;color:#71717a;">State University &bull; Honors</div>
+            </div>
           </div>
         </div>
       </div>
@@ -257,23 +289,40 @@ export function getPreviewHTML(template, candidateData = {}, customPalette = nul
   // ── Layout 4: Soft Blue Right Sidebar (Morgan Connors style) ───────
   if (t.layoutFamily === "right-sidebar") {
     return `
-      <div style="font-family:${fontFamily};background:#fff;display:flex;height:100%;box-sizing:border-box;">
-        <div style="flex:1;padding:8px 10px;">
-          <div style="font-size:9px;font-weight:800;color:#0f172a;">${name}</div>
-          <div style="font-size:6.5px;color:${accent};font-weight:600;margin-bottom:8px;">${title}</div>
-          <div style="font-size:6px;font-weight:800;text-transform:uppercase;color:${accent};border-bottom:1px solid #cbd5e1;padding-bottom:1px;margin-bottom:3px;">Summary</div>
-          <div style="font-size:4.5px;color:#334155;line-height:1.35;margin-bottom:6px;">Results-driven professional with deep domain mastery and leadership excellence.</div>
-          <div style="font-size:6px;font-weight:800;text-transform:uppercase;color:${accent};border-bottom:1px solid #cbd5e1;padding-bottom:1px;margin-bottom:3px;">Experience</div>
-          <div style="font-size:5px;font-weight:700;color:#0f172a;">${title} — Prime Org</div>
-          <div style="font-size:4.5px;color:#475569;line-height:1.3;">• Accelerated key project milestones<br/>• Improved workflow turnaround by 30%</div>
+      <div style="font-family:${fontFamily};background:#ffffff;display:flex;width:100%;height:100%;box-sizing:border-box;color:#0f172a;overflow:hidden;">
+        <!-- Left Main Content (Wide) -->
+        <div style="flex:1;padding:12px 14px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;">
+          <div>
+            <div style="font-size:12px;font-weight:900;color:#0f172a;letter-spacing:0.3px;">${name}</div>
+            <div style="font-size:8px;color:${accent};font-weight:700;margin-top:1px;margin-bottom:8px;">${title}</div>
+
+            <div style="font-size:7.5px;font-weight:800;text-transform:uppercase;color:${accent};border-bottom:1.5px solid #cbd5e1;padding-bottom:2px;margin-bottom:4px;letter-spacing:0.5px;">Professional Summary</div>
+            <div style="font-size:6.5px;color:#334155;line-height:1.4;margin-bottom:8px;">Proven track record in optimizing enterprise workflows, driving cross-functional projects, and aligning technical milestones with core business strategy.</div>
+
+            <div style="font-size:7.5px;font-weight:800;text-transform:uppercase;color:${accent};border-bottom:1.5px solid #cbd5e1;padding-bottom:2px;margin-bottom:4px;letter-spacing:0.5px;">Work Experience</div>
+            <div style="margin-bottom:6px;">
+              <div style="font-size:7.5px;font-weight:700;color:#0f172a;">${title} &mdash; Global Co <span style="float:right;color:#64748b;font-size:6.5px;">2021–Now</span></div>
+              <div style="font-size:6.5px;color:#475569;line-height:1.35;margin-top:2px;">• Led strategic operational improvements delivering quantifiable impact<br/>• Streamlined team throughput and reduced turnaround time by 30%</div>
+            </div>
+          </div>
+          <div style="border-top:1px solid #e2e8f0;padding-top:4px;">
+            <div style="font-size:6.5px;color:#64748b;font-weight:600;">Core Domain: Enterprise Agility &bull; Product Execution</div>
+          </div>
         </div>
-        <div style="width:34%;background:${sidebarBg};padding:8px 6px;border-left:1px solid #dbeafe;">
-          <div style="font-size:6px;font-weight:800;text-transform:uppercase;color:${accent};margin-bottom:3px;">Contact</div>
-          <div style="font-size:4.5px;color:#334155;line-height:1.4;margin-bottom:6px;">${location}<br/>${email}</div>
-          <div style="font-size:6px;font-weight:800;text-transform:uppercase;color:${accent};margin-bottom:3px;">Skills</div>
-          <div style="font-size:4.5px;color:#334155;line-height:1.4;margin-bottom:6px;">• Strategic Ops<br/>• Technical Mgmt<br/>• Data Analysis</div>
-          <div style="font-size:6px;font-weight:800;text-transform:uppercase;color:${accent};margin-bottom:3px;">Education</div>
-          <div style="font-size:4.5px;color:#334155;font-weight:600;">Bachelor's Degree</div>
+
+        <!-- Right Tinted Sidebar -->
+        <div style="width:36%;background:${sidebarBg};padding:12px 10px;border-left:1.5px solid #dbeafe;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;">
+          <div>
+            <div style="font-size:7.5px;font-weight:800;text-transform:uppercase;color:${accent};margin-bottom:3px;letter-spacing:0.5px;">Contact</div>
+            <div style="font-size:6.5px;color:#334155;line-height:1.45;margin-bottom:10px;">${location}<br/>${email}</div>
+
+            <div style="font-size:7.5px;font-weight:800;text-transform:uppercase;color:${accent};margin-bottom:3px;letter-spacing:0.5px;">Core Skills</div>
+            <div style="font-size:6.5px;color:#334155;line-height:1.45;margin-bottom:10px;">• Strategic Ops<br/>• Technical Mgmt<br/>• Data Analytics<br/>• Cross-Team Lead</div>
+
+            <div style="font-size:7.5px;font-weight:800;text-transform:uppercase;color:${accent};margin-bottom:3px;letter-spacing:0.5px;">Education</div>
+            <div style="font-size:6.5px;color:#0f172a;font-weight:700;">Bachelor's Degree</div>
+            <div style="font-size:6px;color:#64748b;">University Graduate</div>
+          </div>
         </div>
       </div>
     `;
@@ -282,21 +331,31 @@ export function getPreviewHTML(template, candidateData = {}, customPalette = nul
   // ── Layout 5: Jacob Red Circle Badge ──────────────────────────────
   if (t.layoutFamily === "badge-executive") {
     return `
-      <div style="font-family:${fontFamily};background:#fff;padding:8px 10px;height:100%;box-sizing:border-box;">
-        <div style="display:flex;align-items:center;gap:5px;border-bottom:1.5px solid ${accent};padding-bottom:5px;margin-bottom:6px;">
-          <div style="width:12px;height:12px;border-radius:50%;background:${accent};flex-shrink:0;"></div>
-          <div>
-            <div style="font-size:9.5px;font-weight:800;color:#111;">${name}</div>
-            <div style="font-size:6px;color:#666;">${title} &bull; ${location}</div>
+      <div style="font-family:${fontFamily};background:#ffffff;padding:12px 14px;width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;">
+        <div>
+          <!-- Header with Red Circle Badge -->
+          <div style="display:flex;align-items:center;gap:8px;border-bottom:2px solid ${accent};padding-bottom:8px;margin-bottom:8px;">
+            <div style="width:18px;height:18px;border-radius:50%;background:${accent};flex-shrink:0;"></div>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:#0f172a;letter-spacing:0.5px;text-transform:uppercase;">${name}</div>
+              <div style="font-size:7.5px;color:${accent};font-weight:600;">${title} &bull; ${location} &bull; ${email}</div>
+            </div>
+          </div>
+
+          <div style="font-size:7.5px;font-weight:800;color:${accent};text-transform:uppercase;margin-bottom:3px;letter-spacing:0.5px;">Objective &amp; Executive Summary</div>
+          <div style="font-size:6.5px;color:#334155;line-height:1.4;margin-bottom:8px;">Dedicated executive specialist focused on driving scalable enterprise solutions, building high-performing teams, and optimizing operational productivity.</div>
+
+          <div style="font-size:7.5px;font-weight:800;color:${accent};text-transform:uppercase;margin-bottom:3px;letter-spacing:0.5px;">Professional Experience</div>
+          <div style="margin-bottom:6px;">
+            <div style="font-size:7.5px;font-weight:700;color:#0f172a;">${title} — Industry Lead <span style="float:right;color:#64748b;font-size:6.5px;">2020–Present</span></div>
+            <div style="font-size:6.5px;color:#475569;line-height:1.35;margin-top:2px;">• Managed mission-critical roadmaps with 99.8% on-time milestone delivery<br/>• Coordinated cross-functional departments to maximize organizational output</div>
           </div>
         </div>
-        <div style="font-size:6px;font-weight:800;color:${accent};text-transform:uppercase;margin-bottom:2px;">Objective</div>
-        <div style="font-size:4.5px;color:#333;line-height:1.3;margin-bottom:5px;">Dedicated specialist focused on delivering scalable high-impact solutions.</div>
-        <div style="font-size:6px;font-weight:800;color:${accent};text-transform:uppercase;margin-bottom:2px;">Experience</div>
-        <div style="font-size:5px;font-weight:700;color:#111;">${title} — Industry Lead <span style="float:right;color:#666;">2020–Now</span></div>
-        <div style="font-size:4.5px;color:#444;line-height:1.3;margin-bottom:5px;">• Managed mission-critical initiatives with 99.8% precision<br/>• Coordinated cross-functional teams</div>
-        <div style="font-size:6px;font-weight:800;color:${accent};text-transform:uppercase;margin-bottom:2px;">Education &amp; Skills</div>
-        <div style="font-size:4.5px;color:#333;">Degree in Specialization &bull; Core Strategy, Analytics &amp; Execution</div>
+
+        <div style="border-top:1px solid #e2e8f0;padding-top:6px;display:flex;justify-content:space-between;">
+          <div style="font-size:6.5px;color:#0f172a;font-weight:700;">Education: Bachelor of Science Degree</div>
+          <div style="font-size:6.5px;color:${accent};font-weight:700;">Skills: Strategy &bull; Leadership &bull; Execution</div>
+        </div>
       </div>
     `;
   }
@@ -304,24 +363,34 @@ export function getPreviewHTML(template, candidateData = {}, customPalette = nul
   // ── Layout 6: Warm Sand Editorial (Kai Carter Beige) ───────────────
   if (t.layoutFamily === "warm-sand-split") {
     return `
-      <div style="font-family:${fontFamily};background:#f8f3ed;padding:8px 10px;height:100%;box-sizing:border-box;">
-        <div style="text-align:center;border-bottom:1px solid #d7c9b8;padding-bottom:5px;margin-bottom:6px;">
-          <div style="font-size:10px;font-weight:bold;color:#292524;">${name}</div>
-          <div style="font-size:6px;color:${accent};text-transform:uppercase;letter-spacing:0.5px;">${title}</div>
-          <div style="font-size:5px;color:#78716c;">${location} &bull; ${email}</div>
+      <div style="font-family:${fontFamily};background:#f8f3ed;padding:12px 14px;width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;color:#292524;overflow:hidden;">
+        <div>
+          <div style="text-align:center;border-bottom:1.5px solid #d7c9b8;padding-bottom:8px;margin-bottom:8px;">
+            <div style="font-size:12px;font-weight:900;letter-spacing:0.5px;color:#292524;">${name}</div>
+            <div style="font-size:7.5px;color:${accent};text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-top:1px;">${title}</div>
+            <div style="font-size:6.5px;color:#78716c;margin-top:2px;">${location} &bull; ${email}</div>
+          </div>
+
+          <div style="display:flex;gap:12px;">
+            <div style="width:38%;">
+              <div style="font-size:7.5px;font-weight:700;color:#292524;text-transform:uppercase;border-bottom:1px solid #d7c9b8;padding-bottom:1px;margin-bottom:4px;">Skills</div>
+              <div style="font-size:6.5px;color:#57534e;line-height:1.45;margin-bottom:8px;">• Strategic Roadmap<br/>• Risk Optimization<br/>• Stakeholder Relations<br/>• Team Performance</div>
+
+              <div style="font-size:7.5px;font-weight:700;color:#292524;text-transform:uppercase;border-bottom:1px solid #d7c9b8;padding-bottom:1px;margin-bottom:4px;">Education</div>
+              <div style="font-size:6.5px;color:#292524;font-weight:700;">University College</div>
+              <div style="font-size:6px;color:#78716c;">Bachelor's Degree</div>
+            </div>
+
+            <div style="flex:1;">
+              <div style="font-size:7.5px;font-weight:700;color:#292524;text-transform:uppercase;border-bottom:1px solid #d7c9b8;padding-bottom:1px;margin-bottom:4px;">Work Experience</div>
+              <div style="font-size:7.5px;font-weight:700;color:#292524;">${title} &mdash; Global Solutions</div>
+              <div style="font-size:6.5px;color:#57534e;line-height:1.35;margin-top:2px;">• Led core strategic roadmap and improved departmental workflow throughput by 24%<br/>• Managed client engagements and delivered superior satisfaction</div>
+            </div>
+          </div>
         </div>
-        <div style="display:flex;gap:8px;">
-          <div style="width:38%;">
-            <div style="font-size:6px;font-weight:700;color:#292524;text-transform:uppercase;border-bottom:0.5px solid #d7c9b8;margin-bottom:2px;">Skills</div>
-            <div style="font-size:4.5px;color:#57534e;line-height:1.4;margin-bottom:5px;">• Domain Leadership<br/>• Risk Optimization<br/>• Communication</div>
-            <div style="font-size:6px;font-weight:700;color:#292524;text-transform:uppercase;border-bottom:0.5px solid #d7c9b8;margin-bottom:2px;">Education</div>
-            <div style="font-size:4.5px;color:#57534e;line-height:1.3;">University College<br/>Bachelor's Degree</div>
-          </div>
-          <div style="flex:1;">
-            <div style="font-size:6px;font-weight:700;color:#292524;text-transform:uppercase;border-bottom:0.5px solid #d7c9b8;margin-bottom:2px;">Work Experience</div>
-            <div style="font-size:5px;font-weight:700;color:#292524;">${title} &mdash; Global Co</div>
-            <div style="font-size:4.5px;color:#57534e;line-height:1.3;">• Led core strategic roadmap<br/>• Delivered 20% operational efficiency</div>
-          </div>
+
+        <div style="border-top:1px solid #d7c9b8;padding-top:4px;font-size:6px;color:#78716c;text-align:center;">
+          Editorial Format &bull; Executive Presentation &bull; ATS Ready
         </div>
       </div>
     `;
@@ -330,20 +399,33 @@ export function getPreviewHTML(template, candidateData = {}, customPalette = nul
   // ── Layout 7: Teal Card Header (Taylor Phillips style) ────────────
   if (t.layoutFamily === "header-card-split") {
     return `
-      <div style="font-family:${fontFamily};background:#fff;height:100%;box-sizing:border-box;display:flex;flex-direction:column;">
-        <div style="background:#0d9488;color:#fff;padding:8px 10px;">
-          <div style="font-size:10px;font-weight:900;letter-spacing:0.3px;">${name}</div>
-          <div style="font-size:6px;opacity:0.9;margin-top:2px;">${title} &bull; ${location} &bull; ${email}</div>
+      <div style="font-family:${fontFamily};background:#ffffff;display:flex;flex-direction:column;width:100%;height:100%;box-sizing:border-box;overflow:hidden;">
+        <!-- Top Teal Card -->
+        <div style="background:#0d9488;color:#ffffff;padding:12px 14px;box-sizing:border-box;">
+          <div style="font-size:12px;font-weight:900;letter-spacing:0.5px;">${name}</div>
+          <div style="font-size:7.5px;opacity:0.95;margin-top:2px;">${title} &bull; ${location} &bull; ${email}</div>
         </div>
-        <div style="padding:6px 10px;flex:1;">
-          <div style="font-size:6px;font-weight:800;color:#0d9488;text-transform:uppercase;border-bottom:1px solid #0d9488;padding-bottom:1px;margin-bottom:3px;">Experience</div>
-          <div style="font-size:5px;font-weight:700;color:#111;">${title} &mdash; Lead Org <span style="float:right;color:#666;">2021–Now</span></div>
-          <div style="font-size:4.5px;color:#444;line-height:1.3;margin-bottom:5px;">• Managed end-to-end deliverables<br/>• Engineered automated workflows</div>
-          <div style="font-size:6px;font-weight:800;color:#0d9488;text-transform:uppercase;border-bottom:1px solid #0d9488;padding-bottom:1px;margin-bottom:3px;">Core Competencies</div>
-          <div style="display:flex;gap:3px;margin-top:2px;">
-            <span style="background:#ccfbf1;color:#0f766e;font-size:4.5px;padding:1px 3px;border-radius:2px;">Strategy</span>
-            <span style="background:#ccfbf1;color:#0f766e;font-size:4.5px;padding:1px 3px;border-radius:2px;">Leadership</span>
-            <span style="background:#ccfbf1;color:#0f766e;font-size:4.5px;padding:1px 3px;border-radius:2px;">Analytics</span>
+
+        <!-- Body -->
+        <div style="padding:12px 14px;flex:1;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;">
+          <div>
+            <div style="font-size:7.5px;font-weight:800;color:#0d9488;text-transform:uppercase;border-bottom:1.5px solid #0d9488;padding-bottom:2px;margin-bottom:4px;letter-spacing:0.5px;">Experience</div>
+            <div style="margin-bottom:6px;">
+              <div style="font-size:7.5px;font-weight:700;color:#0f172a;">${title} &mdash; Lead Org <span style="float:right;color:#64748b;font-size:6.5px;">2021–Now</span></div>
+              <div style="font-size:6.5px;color:#334155;line-height:1.35;margin-top:2px;">• Managed end-to-end deliverables and engineered automated workflows<br/>• Reduced processing bottlenecks and improved turnaround by 25%</div>
+            </div>
+
+            <div style="font-size:7.5px;font-weight:800;color:#0d9488;text-transform:uppercase;border-bottom:1.5px solid #0d9488;padding-bottom:2px;margin-bottom:5px;letter-spacing:0.5px;">Core Competencies</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+              <span style="background:#ccfbf1;color:#0f766e;font-size:6.5px;font-weight:600;padding:2px 6px;border-radius:3px;">Strategy</span>
+              <span style="background:#ccfbf1;color:#0f766e;font-size:6.5px;font-weight:600;padding:2px 6px;border-radius:3px;">Operations</span>
+              <span style="background:#ccfbf1;color:#0f766e;font-size:6.5px;font-weight:600;padding:2px 6px;border-radius:3px;">Leadership</span>
+              <span style="background:#ccfbf1;color:#0f766e;font-size:6.5px;font-weight:600;padding:2px 6px;border-radius:3px;">Analytics</span>
+            </div>
+          </div>
+
+          <div style="border-top:1px solid #ccfbf1;padding-top:4px;font-size:6.5px;color:#0f766e;font-weight:600;">
+            Education: Bachelor's Degree &bull; Certified Professional
           </div>
         </div>
       </div>
@@ -353,26 +435,34 @@ export function getPreviewHTML(template, candidateData = {}, customPalette = nul
   // ── Layout 8: Tonnie Purple Boxed ─────────────────────────────────
   if (t.layoutFamily === "boxed-sidebar") {
     return `
-      <div style="font-family:${fontFamily};background:#fff;padding:8px 10px;height:100%;box-sizing:border-box;">
-        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid ${accent};padding-bottom:4px;margin-bottom:6px;">
-          <div>
-            <div style="font-size:10px;font-weight:800;color:${accent};">${name}</div>
-            <div style="font-size:6px;color:#64748b;">${title}</div>
+      <div style="font-family:${fontFamily};background:#ffffff;padding:12px 14px;width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid ${accent};padding-bottom:6px;margin-bottom:8px;">
+            <div>
+              <div style="font-size:12px;font-weight:900;color:${accent};">${name}</div>
+              <div style="font-size:7.5px;color:#64748b;font-weight:600;">${title}</div>
+            </div>
+            <div style="font-size:12px;color:${accent};">★★</div>
           </div>
-          <div style="font-size:8px;color:${accent};">★★</div>
+
+          <div style="display:flex;gap:10px;">
+            <div style="width:38%;border:1px solid #e9d5ff;background:#faf5ff;padding:8px;border-radius:5px;">
+              <div style="font-size:7px;font-weight:800;color:${accent};text-transform:uppercase;margin-bottom:3px;">Contact</div>
+              <div style="font-size:6.5px;color:#581c87;line-height:1.4;margin-bottom:6px;">${location}<br/>${email}</div>
+              <div style="font-size:7px;font-weight:800;color:${accent};text-transform:uppercase;margin-bottom:3px;">Key Skills</div>
+              <div style="font-size:6.5px;color:#581c87;line-height:1.4;">• Ops &amp; Scale<br/>• Quality Mgmt<br/>• Project Lead</div>
+            </div>
+
+            <div style="flex:1;">
+              <div style="font-size:7.5px;font-weight:800;color:${accent};text-transform:uppercase;margin-bottom:3px;">Experience</div>
+              <div style="font-size:7.5px;font-weight:700;color:#0f172a;">${title} — Prime Corp</div>
+              <div style="font-size:6.5px;color:#475569;line-height:1.35;margin-top:2px;">• Scaled operations by 35% while maintaining compliance standards<br/>• Championed efficiency across multiple teams</div>
+            </div>
+          </div>
         </div>
-        <div style="display:flex;gap:6px;">
-          <div style="width:36%;border:1px solid #e9d5ff;background:#faf5ff;padding:4px;border-radius:3px;">
-            <div style="font-size:5.5px;font-weight:800;color:${accent};text-transform:uppercase;margin-bottom:2px;">Contact</div>
-            <div style="font-size:4.5px;color:#581c87;line-height:1.3;margin-bottom:4px;">${location}<br/>${email}</div>
-            <div style="font-size:5.5px;font-weight:800;color:${accent};text-transform:uppercase;margin-bottom:2px;">Skills</div>
-            <div style="font-size:4.5px;color:#581c87;line-height:1.3;">• Ops &amp; Scale<br/>• Quality Mgmt</div>
-          </div>
-          <div style="flex:1;">
-            <div style="font-size:6px;font-weight:800;color:${accent};text-transform:uppercase;margin-bottom:2px;">Experience</div>
-            <div style="font-size:5px;font-weight:700;color:#111;">${title} — Corp</div>
-            <div style="font-size:4.5px;color:#444;line-height:1.3;">• Scaled operations by 40%<br/>• Maintained 100% compliance</div>
-          </div>
+
+        <div style="border-top:1px solid #f3e8ff;padding-top:4px;font-size:6.5px;color:#7c3aed;font-weight:600;">
+          Education: Degree in Discipline &bull; Academic Honors
         </div>
       </div>
     `;
@@ -381,25 +471,35 @@ export function getPreviewHTML(template, candidateData = {}, customPalette = nul
   // ── Layout 9: Timeline Rail (Liidia Peetre) ───────────────────────
   if (t.layoutFamily === "timeline-rail") {
     return `
-      <div style="font-family:${fontFamily};background:#fff;padding:8px 10px;height:100%;box-sizing:border-box;">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #0f172a;padding-bottom:4px;margin-bottom:6px;">
-          <div style="font-size:9.5px;font-weight:800;color:#0f172a;">${name}</div>
-          <div style="font-size:6px;color:#64748b;font-weight:600;">${title}</div>
-        </div>
-        <div style="font-size:6px;font-weight:800;text-transform:uppercase;color:#0f172a;margin-bottom:3px;">Experience Timeline</div>
-        <div style="display:flex;gap:6px;margin-bottom:5px;">
-          <div style="font-size:4.5px;color:#64748b;font-weight:700;width:28%;">2021 &mdash; NOW</div>
-          <div style="flex:1;border-left:1px solid #cbd5e1;padding-left:4px;">
-            <div style="font-size:5px;font-weight:700;color:#0f172a;">${title} &bull; Enterprise</div>
-            <div style="font-size:4.5px;color:#334155;line-height:1.3;">• Orchestrated key technical implementations</div>
+      <div style="font-family:${fontFamily};background:#ffffff;padding:12px 14px;width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;color:#0f172a;overflow:hidden;">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #0f172a;padding-bottom:6px;margin-bottom:8px;">
+            <div style="font-size:12px;font-weight:900;color:#0f172a;">${name}</div>
+            <div style="font-size:7.5px;color:#64748b;font-weight:600;">${title}</div>
+          </div>
+
+          <div style="font-size:7.5px;font-weight:800;text-transform:uppercase;color:#0f172a;margin-bottom:6px;letter-spacing:0.5px;">Experience Timeline</div>
+          
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <div style="font-size:6.5px;color:#64748b;font-weight:700;width:30%;">2021 &mdash; PRESENT</div>
+            <div style="flex:1;border-left:2px solid #cbd5e1;padding-left:8px;">
+              <div style="font-size:7.5px;font-weight:700;color:#0f172a;">${title} &bull; Enterprise</div>
+              <div style="font-size:6.5px;color:#334155;line-height:1.35;margin-top:1px;">• Orchestrated key technical implementations with high system reliability</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;">
+            <div style="font-size:6.5px;color:#64748b;font-weight:700;width:30%;">2018 &mdash; 2021</div>
+            <div style="flex:1;border-left:2px solid #cbd5e1;padding-left:8px;">
+              <div style="font-size:7.5px;font-weight:700;color:#0f172a;">Associate Lead &bull; Technology Inc</div>
+              <div style="font-size:6.5px;color:#334155;line-height:1.35;margin-top:1px;">• Built core systems &amp; streamlined operational automation</div>
+            </div>
           </div>
         </div>
-        <div style="display:flex;gap:6px;">
-          <div style="font-size:4.5px;color:#64748b;font-weight:700;width:28%;">2018 &mdash; 2021</div>
-          <div style="flex:1;border-left:1px solid #cbd5e1;padding-left:4px;">
-            <div style="font-size:5px;font-weight:700;color:#0f172a;">Associate Lead &bull; Technology Corp</div>
-            <div style="font-size:4.5px;color:#334155;line-height:1.3;">• Built core systems &amp; streamlined operations</div>
-          </div>
+
+        <div style="border-top:1px solid #e2e8f0;padding-top:4px;display:flex;justify-content:space-between;font-size:6.5px;color:#64748b;font-weight:600;">
+          <span>BSc Engineering Degree</span>
+          <span>Core: Systems &bull; Architecture</span>
         </div>
       </div>
     `;
@@ -408,41 +508,59 @@ export function getPreviewHTML(template, candidateData = {}, customPalette = nul
   // ── Layout 10: Soft Lilac Banner (Janna Gardner) ───────────────────
   if (t.layoutFamily === "soft-banner") {
     return `
-      <div style="font-family:${fontFamily};background:#fff;height:100%;box-sizing:border-box;display:flex;flex-direction:column;">
-        <div style="background:#ede9fe;text-align:center;padding:7px 10px;border-bottom:1px solid #ddd6fe;">
-          <div style="font-size:9.5px;font-weight:700;color:#5b21b6;">${name}</div>
-          <div style="font-size:5.5px;color:#6b21a8;margin-top:1px;">${title} &bull; ${location} &bull; ${email}</div>
+      <div style="font-family:${fontFamily};background:#ffffff;display:flex;flex-direction:column;width:100%;height:100%;box-sizing:border-box;overflow:hidden;">
+        <!-- Soft Lilac Top Banner -->
+        <div style="background:#ede9fe;text-align:center;padding:10px 14px;border-bottom:1.5px solid #ddd6fe;">
+          <div style="font-size:12px;font-weight:800;color:#5b21b6;letter-spacing:0.3px;">${name}</div>
+          <div style="font-size:7px;color:#6b21a8;margin-top:2px;">${title} &bull; ${location} &bull; ${email}</div>
         </div>
-        <div style="padding:6px 10px;flex:1;">
-          <div style="font-size:6px;font-weight:700;text-transform:uppercase;color:#5b21b6;border-bottom:0.5px solid #ddd6fe;margin-bottom:3px;">Summary</div>
-          <div style="font-size:4.5px;color:#444;line-height:1.35;margin-bottom:5px;">Accomplished professional with exceptional track record in driving measurable business outcomes.</div>
-          <div style="font-size:6px;font-weight:700;text-transform:uppercase;color:#5b21b6;border-bottom:0.5px solid #ddd6fe;margin-bottom:3px;">Experience</div>
-          <div style="font-size:5px;font-weight:700;color:#111;">${title} — Senior Associate <span style="float:right;color:#666;">2021–Now</span></div>
-          <div style="font-size:4.5px;color:#444;line-height:1.3;">• Spearheaded key deliverables with quantifiable metrics</div>
+
+        <div style="padding:12px 14px;flex:1;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;">
+          <div>
+            <div style="font-size:7.5px;font-weight:700;text-transform:uppercase;color:#5b21b6;border-bottom:1px solid #ddd6fe;padding-bottom:2px;margin-bottom:4px;">Executive Summary</div>
+            <div style="font-size:6.5px;color:#475569;line-height:1.4;margin-bottom:8px;">Accomplished professional with exceptional track record in driving measurable business outcomes and cultivating strategic partnerships.</div>
+
+            <div style="font-size:7.5px;font-weight:700;text-transform:uppercase;color:#5b21b6;border-bottom:1px solid #ddd6fe;padding-bottom:2px;margin-bottom:4px;">Experience</div>
+            <div style="font-size:7.5px;font-weight:700;color:#0f172a;">${title} — Senior Associate <span style="float:right;color:#64748b;font-size:6.5px;">2021–Now</span></div>
+            <div style="font-size:6.5px;color:#334155;line-height:1.35;margin-top:2px;">• Spearheaded key deliverables with quantifiable metrics and operational excellence</div>
+          </div>
+
+          <div style="border-top:1px solid #ede9fe;padding-top:4px;font-size:6.5px;color:#5b21b6;font-weight:600;">
+            Education: Degree in Field &bull; Continuous Leadership Certifications
+          </div>
         </div>
       </div>
     `;
   }
 
-  // ── Layout 12: Editorial Minimal Serif (Aneela Mohan / Andree) ────
+  // ── Layout 11 / 12: Editorial Minimal Serif / Clean Minimal ATS ────
   return `
-    <div style="font-family:${fontFamily};background:#fff;padding:8px 10px;height:100%;box-sizing:border-box;">
-      <div style="display:flex;justify-content:space-between;border-bottom:1.5px solid #111;padding-bottom:4px;margin-bottom:6px;">
-        <div>
-          <div style="font-size:10px;font-weight:800;color:#111;letter-spacing:0.3px;">${name}</div>
-          <div style="font-size:6px;color:#4b5563;text-transform:uppercase;">${title}</div>
+    <div style="font-family:${fontFamily};background:#ffffff;padding:12px 14px;width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;color:#0f172a;overflow:hidden;">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #0f172a;padding-bottom:6px;margin-bottom:8px;">
+          <div>
+            <div style="font-size:13px;font-weight:900;color:#0f172a;letter-spacing:0.3px;">${name}</div>
+            <div style="font-size:7.5px;color:#475569;text-transform:uppercase;font-weight:600;margin-top:1px;">${title}</div>
+          </div>
+          <div style="text-align:right;font-size:6.5px;color:#64748b;line-height:1.3;">
+            ${location}<br/>${email}
+          </div>
         </div>
-        <div style="text-align:right;font-size:4.5px;color:#6b7280;line-height:1.3;">
-          ${location}<br/>${email}
+
+        <div style="font-size:7.5px;font-weight:800;text-transform:uppercase;color:#0f172a;margin-bottom:3px;letter-spacing:0.5px;">Executive Summary</div>
+        <div style="font-size:6.5px;color:#334155;line-height:1.4;margin-bottom:8px;">Results-oriented professional with proven expertise in executing strategic initiatives, managing key stakeholders, and optimizing organizational performance.</div>
+
+        <div style="font-size:7.5px;font-weight:800;text-transform:uppercase;color:#0f172a;margin-bottom:3px;letter-spacing:0.5px;">Professional Experience</div>
+        <div style="margin-bottom:6px;">
+          <div style="font-size:7.5px;font-weight:700;color:#0f172a;">${title} &mdash; Global Solutions <span style="float:right;color:#64748b;font-size:6.5px;">2020–Present</span></div>
+          <div style="font-size:6.5px;color:#334155;line-height:1.35;margin-top:2px;">• Delivered measurable operational enhancements and team success<br/>• Streamlined cross-functional workflows and reduced deliverable cycle time</div>
         </div>
       </div>
-      <div style="font-size:6px;font-weight:800;text-transform:uppercase;color:#111;margin-bottom:2px;letter-spacing:0.5px;">Executive Summary</div>
-      <div style="font-size:4.5px;color:#374151;line-height:1.35;margin-bottom:5px;">Results-oriented professional with proven expertise in executing strategic initiatives and optimizing performance.</div>
-      <div style="font-size:6px;font-weight:800;text-transform:uppercase;color:#111;margin-bottom:2px;letter-spacing:0.5px;">Professional Experience</div>
-      <div style="font-size:5px;font-weight:700;color:#111;">${title} &mdash; Global Solutions <span style="float:right;color:#6b7280;">2020–Present</span></div>
-      <div style="font-size:4.5px;color:#374151;line-height:1.3;margin-top:1px;">• Delivered measurable operational enhancements and team success<br/>• Streamlined cross-functional workflows</div>
-      <div style="font-size:6px;font-weight:800;text-transform:uppercase;color:#111;margin-top:5px;margin-bottom:2px;letter-spacing:0.5px;">Education &amp; Credentials</div>
-      <div style="font-size:4.5px;color:#374151;">Bachelor's Degree &bull; Academic Institution</div>
+
+      <div style="border-top:1px solid #e2e8f0;padding-top:4px;display:flex;justify-content:space-between;font-size:6.5px;color:#64748b;font-weight:600;">
+        <span>Education: Bachelor's Degree</span>
+        <span>Key Skills: Strategy &bull; Leadership &bull; Operations</span>
+      </div>
     </div>
   `;
 }

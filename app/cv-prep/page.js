@@ -706,26 +706,14 @@ function TemplateStep({
             >
               {/* Real mini-resume preview */}
               <div
-                className="relative w-full overflow-hidden rounded-lg shadow-md"
+                className="relative w-full aspect-[1/1.32] overflow-hidden rounded-lg shadow-md"
                 style={{
-                  aspectRatio: "3/4",
-                  border: selected ? `2px solid ${activeAccent}` : "1px solid rgba(255,255,255,0.10)",
-                  background: "#fff",
+                  border: selected ? `2px solid ${activeAccent}` : "1px solid rgba(255,255,255,0.12)",
+                  background: t.layoutFamily === "warm-sand-split" ? "#f8f3ed" : "#ffffff",
                 }}
               >
-                {/* Scale the preview HTML down to fit the card */}
                 <div
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "280px",
-                    height: "373px",
-                    transformOrigin: "top left",
-                    transform: "scale(0.385)",
-                    pointerEvents: "none",
-                    userSelect: "none",
-                  }}
+                  className="w-full h-full pointer-events-none select-none overflow-hidden"
                   dangerouslySetInnerHTML={{ __html: getPreviewHTML(t, previewCandidateData, customPalette) }}
                 />
 
@@ -742,7 +730,7 @@ function TemplateStep({
                 {/* Layout type label overlay */}
                 <div
                   className="absolute bottom-0 left-0 right-0 px-2 py-1 text-[7.5px] font-mono tracking-wide z-10"
-                  style={{ backgroundColor: "rgba(0,0,0,0.65)", color: activeAccent }}
+                  style={{ backgroundColor: "rgba(0,0,0,0.70)", color: activeAccent }}
                 >
                   {t.tone.toUpperCase()} · {t.columns === 2 ? "2-COL" : "1-COL"}
                 </div>
