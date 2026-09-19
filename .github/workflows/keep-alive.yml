@@ -2,7 +2,7 @@ name: Keep Supabase Alive
 
 on:
   schedule:
-    # Runs at 00:00 UTC every 3 days to prevent Supabase free-tier project from pausing
+    # Runs at 00:00 UTC every 3 days to prevent Supabase free-tier project from auto-pausing
     - cron: '0 0 */3 * *'
   push:
     branches: [ main ]
@@ -17,43 +17,69 @@ jobs:
     steps:
       - name: Send keep-alive ping to Supabase
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_ANON_KEY || secrets.SUPABASE_KEY }}
+          RAW_URL: ${{ secrets.SUPABASE_URL }}
+          RAW_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_ANON_KEY || secrets.SUPABASE_KEY }}
         run: |
-          if [ -z "$SUPABASE_URL" ]; then
-            echo "❌ Error: SUPABASE_URL secret is not configured in GitHub repository secrets."
-            echo "Go to Settings -> Secrets and variables -> Actions -> New repository secret"
-            exit 1
-          fi
+          python3 -c '
+          import os, sys, urllib.parse, urllib.request, ssl
 
-          if [ -z "$SUPABASE_KEY" ]; then
-            echo "❌ Error: SUPABASE_ANON_KEY or SUPABASE_SERVICE_ROLE_KEY secret is not configured."
-            echo "Go to Settings -> Secrets and variables -> Actions -> New repository secret"
-            exit 1
-          fi
+          raw_url = os.environ.get("RAW_URL", "").strip().strip("\"'\''")
+          raw_key = os.environ.get("RAW_KEY", "").strip().strip("\"'\''")
 
-          # Clean up URL trailing slash if present
-          CLEAN_URL="${SUPABASE_URL%/}"
+          if not raw_url:
+              print("❌ ERROR: SUPABASE_URL secret is missing in GitHub Repository Secrets!")
+              print("👉 Add it in GitHub Repo -> Settings -> Secrets and variables -> Actions -> New repository secret")
+              sys.exit(1)
 
-          echo "📡 Pinging Supabase 'prices' table..."
-          
-          # 1. Query 'prices' table to keep Postgres database engine active
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X GET "${CLEAN_URL}/rest/v1/prices?select=id&limit=1" \
-            -H "apikey: ${SUPABASE_KEY}" \
-            -H "Authorization: Bearer ${SUPABASE_KEY}")
+          if not raw_key:
+              print("❌ ERROR: SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY secret is missing in GitHub Secrets!")
+              print("👉 Add it in GitHub Repo -> Settings -> Secrets and variables -> Actions -> New repository secret")
+              sys.exit(1)
 
-          echo "REST API (prices table) Status Code: $HTTP_STATUS"
+          # Auto-fix dashboard URL if pasted by accident (e.g. https://supabase.com/dashboard/project/abcdefghijk)
+          if "dashboard/project/" in raw_url:
+              project_ref = raw_url.split("dashboard/project/")[1].split("/")[0]
+              raw_url = f"https://{project_ref}.supabase.co"
 
-          # 2. Ping Auth service health endpoint
-          AUTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X GET "${CLEAN_URL}/auth/v1/health" \
-            -H "apikey: ${SUPABASE_KEY}")
+          # Ensure https:// prefix
+          if not raw_url.startswith("http://") and not raw_url.startswith("https://"):
+              raw_url = f"https://{raw_url}"
 
-          echo "Auth Service Status Code: $AUTH_STATUS"
+          raw_url = raw_url.rstrip("/")
 
-          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
-            echo "✅ Supabase database pinged successfully! Project is active and will not pause."
-          elif [ "$AUTH_STATUS" -eq 200 ]; then
-            echo "✅ Supabase Auth service pinged successfully! Project is active."
-          else
-            echo "⚠️ Notice: Received HTTP $HTTP_STATUS from REST API and HTTP $AUTH_STATUS from Auth service."
-          fi
+          print(f"📡 Pinging Supabase Project API at: {raw_url}")
+
+          headers = {
+              "apikey": raw_key,
+              "Authorization": f"Bearer {raw_key}",
+              "User-Agent": "NextHire-KeepAlive/1.0"
+          }
+
+          success = False
+
+          # 1. Query "prices" table
+          try:
+              req = urllib.request.Request(f"{raw_url}/rest/v1/prices?select=id&limit=1", headers=headers)
+              context = ssl.create_default_context()
+              with urllib.request.urlopen(req, timeout=15, context=context) as resp:
+                  print(f"✅ Database REST API Ping Success! Status Code: {resp.status}")
+                  success = True
+          except Exception as e:
+              print(f"ℹ️ REST API ping note: {e}")
+
+          # 2. Ping Auth Health endpoint
+          try:
+              req = urllib.request.Request(f"{raw_url}/auth/v1/health", headers={"apikey": raw_key})
+              context = ssl.create_default_context()
+              with urllib.request.urlopen(req, timeout=15, context=context) as resp:
+                  print(f"✅ Auth Health Ping Success! Status Code: {resp.status}")
+                  success = True
+          except Exception as e:
+              print(f"ℹ️ Auth Health ping note: {e}")
+
+          if success:
+              print("🎉 Supabase project pinged successfully! Project is active and will NOT be paused.")
+          else:
+              print("❌ Could not connect to Supabase project. Please check that your SUPABASE_URL and API Key secrets are correct.")
+              sys.exit(1)
+          '
