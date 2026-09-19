@@ -1,0 +1,53 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Runs at 00:00 UTC every 3 days to prevent Supabase free-tier project pausing
+    - cron: '0 0 */3 * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  ping-supabase:
+    name: Ping Supabase Database & Services
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send keep-alive ping to Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_ANON_KEY || secrets.SUPABASE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "❌ Error: SUPABASE_URL secret is not set in GitHub repository secrets."
+            exit 1
+          fi
+
+          if [ -z "$SUPABASE_KEY" ]; then
+            echo "❌ Error: SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY secret is not set."
+            exit 1
+          fi
+
+          # Clean up URL trailing slash if present
+          CLEAN_URL="${SUPABASE_URL%/}"
+
+          echo "📡 Pinging Supabase REST endpoint to keep database active..."
+          
+          # 1. Query database table to trigger active DB transaction
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X GET "${CLEAN_URL}/rest/v1/prices?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_KEY}")
+
+          echo "REST API Status Code: $HTTP_STATUS"
+
+          # 2. Ping Auth Service health endpoint
+          AUTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X GET "${CLEAN_URL}/auth/v1/health" \
+            -H "apikey: ${SUPABASE_KEY}")
+
+          echo "Auth Health Status Code: $AUTH_STATUS"
+
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
+            echo "✅ Supabase database pinged successfully! Project is active."
+          elif [ "$AUTH_STATUS" -eq 200 ]; then
+            echo "✅ Supabase Auth service pinged successfully! Project is active."
+          else
+            echo "⚠️ Warning: Received HTTP $HTTP_STATUS from REST API and HTTP $AUTH_STATUS from Auth service. Please check your credentials if this persists."
+          fi
